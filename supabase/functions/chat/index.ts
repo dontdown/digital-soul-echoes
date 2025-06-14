@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const groqApiKey = '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';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,9 +16,9 @@ serve(async (req) => {
   }
 
   try {
-    if (!openAIApiKey) {
-      console.error('OPENAI_API_KEY não configurada');
-      return new Response(JSON.stringify({ error: 'OpenAI API key não configurada' }), {
+    if (!groqApiKey) {
+      console.error('GROQ_API_KEY não configurada');
+      return new Response(JSON.stringify({ error: 'Groq API key não configurada' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -28,14 +28,14 @@ serve(async (req) => {
     
     console.log('Requisição recebida:', { model, messages: messages?.length, temperature, max_tokens });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model || 'gpt-4o-mini',
+        model: model || 'llama3-8b-8192',
         messages,
         temperature: temperature || 0.8,
         max_tokens: max_tokens || 150,
@@ -44,12 +44,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erro da OpenAI:', response.status, errorText);
-      throw new Error(`OpenAI API Error: ${response.status} - ${errorText}`);
+      console.error('Erro da Groq:', response.status, errorText);
+      throw new Error(`Groq API Error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('Resposta da OpenAI recebida');
+    console.log('Resposta da Groq recebida');
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

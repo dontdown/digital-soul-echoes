@@ -91,7 +91,7 @@ const Chat = () => {
       console.log("🤖 Chamando edge function do Supabase");
 
       const requestBody = {
-        model: 'gpt-4o-mini',
+        model: 'llama3-8b-8192',
         messages: [
           {
             role: 'system',
