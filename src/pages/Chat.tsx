@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -89,12 +88,10 @@ const Chat = () => {
       
       Mantenha as respostas concisas (máximo 2-3 frases) mas profundas. Seja autêntico à sua personalidade.`;
 
-      console.log("🤖 Chamando API com os dados:");
-      console.log("- Modelo: gpt-4.1-2025-04-14");
-      console.log("- URL: /api/chat");
+      console.log("🤖 Chamando edge function do Supabase");
 
       const requestBody = {
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -111,26 +108,26 @@ const Chat = () => {
 
       console.log("📤 Corpo da requisição:", JSON.stringify(requestBody, null, 2));
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://qhokggbjhzkfkojsllet.supabase.co/functions/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFob2tnZ2JqaHprZmtvanNsbGV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MzEwMTIsImV4cCI6MjA2NTUwNzAxMn0.iNEjWSIddalILZRUw6DRoZo-fEXsdUhXs5vS3971lQI'}`,
         },
         body: JSON.stringify(requestBody),
       });
 
       console.log("📡 Status da resposta:", response.status);
-      console.log("📡 Headers da resposta:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ Erro na API - Status:", response.status);
-        console.error("❌ Erro na API - Texto:", errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        console.error("❌ Erro na edge function - Status:", response.status);
+        console.error("❌ Erro na edge function - Texto:", errorText);
+        throw new Error(`Edge Function Error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log("✅ Resposta da API recebida:", data);
+      console.log("✅ Resposta da edge function recebida:", data);
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
         const aiResponse = data.choices[0].message.content;
@@ -138,7 +135,7 @@ const Chat = () => {
         return aiResponse;
       } else {
         console.error("❌ Estrutura de resposta inválida:", data);
-        throw new Error('Resposta da API inválida - estrutura inesperada');
+        throw new Error('Resposta da edge function inválida - estrutura inesperada');
       }
 
     } catch (error) {
