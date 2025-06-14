@@ -22,8 +22,9 @@ export const useChatHistory = (playerName: string) => {
 
   const loadChatHistory = async () => {
     try {
+      // Usando query direta para contornar o problema de tipos
       const { data, error } = await supabase
-        .from('chat_history')
+        .from('chat_history' as any)
         .select('*')
         .eq('player', playerName)
         .order('created_at', { ascending: true });
@@ -38,7 +39,7 @@ export const useChatHistory = (playerName: string) => {
           timestamp: new Date()
         }]);
       } else if (data && data.length > 0) {
-        const loadedMessages = data.map(msg => ({
+        const loadedMessages = data.map((msg: any) => ({
           id: msg.id,
           content: msg.content,
           sender: msg.sender as 'player' | 'echo',
@@ -73,7 +74,7 @@ export const useChatHistory = (playerName: string) => {
   const saveChatMessage = async (message: ChatMessage) => {
     try {
       await supabase
-        .from('chat_history')
+        .from('chat_history' as any)
         .insert({
           player: playerName,
           content: message.content,
