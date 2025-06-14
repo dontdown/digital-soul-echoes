@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ChatMessage {
   id: string;
@@ -12,21 +13,24 @@ export interface ChatMessage {
 export const useChatHistory = (playerName: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   // Carregar histórico de conversas do Supabase
   useEffect(() => {
-    if (!playerName) return;
+    if (!playerName || !user) return;
 
     loadChatHistory();
-  }, [playerName]);
+  }, [playerName, user]);
 
   const loadChatHistory = async () => {
     try {
-      // Usando query direta para contornar o problema de tipos
+      // Usar o ID do usuário autenticado junto com o nome do player
+      const playerKey = `${user?.id}_${playerName}`;
+      
       const { data, error } = await supabase
         .from('chat_history' as any)
         .select('*')
-        .eq('player', playerName)
+        .eq('player', playerKey)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -72,11 +76,15 @@ export const useChatHistory = (playerName: string) => {
   };
 
   const saveChatMessage = async (message: ChatMessage) => {
+    if (!user) return;
+    
     try {
+      const playerKey = `${user.id}_${playerName}`;
+      
       await supabase
         .from('chat_history' as any)
         .insert({
-          player: playerName,
+          player: playerKey,
           content: message.content,
           sender: message.sender,
           message_id: message.id
