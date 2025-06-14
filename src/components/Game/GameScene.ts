@@ -225,14 +225,38 @@ export class GameScene extends Phaser.Scene {
 
   private startChat() {
     this.isChatting = true;
+    
+    // Desabilitar controles de movimento durante o chat
+    this.input.keyboard!.disableGlobalCapture();
+    this.cursors.left.enabled = false;
+    this.cursors.right.enabled = false;
+    this.cursors.up.enabled = false;
+    this.cursors.down.enabled = false;
+    this.wasd.W.enabled = false;
+    this.wasd.A.enabled = false;
+    this.wasd.S.enabled = false;
+    this.wasd.D.enabled = false;
+    
     this.onChatToggle(true);
-    console.log('Chat iniciado - Jogador e Echo parados');
+    console.log('Chat iniciado - Controles desabilitados, jogador e Echo parados');
   }
 
   public stopChat() {
     this.isChatting = false;
+    
+    // Reabilitar controles de movimento
+    this.input.keyboard!.enableGlobalCapture();
+    this.cursors.left.enabled = true;
+    this.cursors.right.enabled = true;
+    this.cursors.up.enabled = true;
+    this.cursors.down.enabled = true;
+    this.wasd.W.enabled = true;
+    this.wasd.A.enabled = true;
+    this.wasd.S.enabled = true;
+    this.wasd.D.enabled = true;
+    
     this.onChatToggle(false);
-    console.log('Chat finalizado - Jogador e Echo podem se mover novamente');
+    console.log('Chat finalizado - Controles reabilitados, jogador e Echo podem se mover');
   }
 
   private checkProximity() {
