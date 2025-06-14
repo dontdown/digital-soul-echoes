@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ const Chat = () => {
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log("Generating Echo response with GPT-4o...");
+      console.log("Generating Echo response with GPT-4.1...");
       
       // Build context for the AI
       const personalityContext = {
@@ -86,13 +87,13 @@ const Chat = () => {
       
       Mantenha as respostas concisas (máximo 2-3 frases) mas profundas. Seja autêntico à sua personalidade.`;
 
-      const response = await fetch('https://lovable.dev/api/ai/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             {
               role: 'system',
@@ -108,12 +109,21 @@ const Chat = () => {
         }),
       });
 
+      console.log("API Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error('Falha ao conectar com Echo');
+        console.error("API Error:", response.status, response.statusText);
+        throw new Error(`API Error: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.choices[0].message.content;
+      console.log("API Response data:", data);
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        return data.choices[0].message.content;
+      } else {
+        throw new Error('Resposta da API inválida');
+      }
 
     } catch (error) {
       console.error('Error generating Echo response:', error);
