@@ -14,6 +14,22 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<GameScene | null>(null);
 
+  // Função para fechar o chat
+  const handleChatClose = () => {
+    if (sceneRef.current) {
+      sceneRef.current.stopChat();
+    }
+  };
+
+  // Wrapper para onChatToggle que também gerencia o estado do Echo
+  const wrappedChatToggle = (show: boolean) => {
+    onChatToggle(show);
+    if (!show && sceneRef.current) {
+      // Quando o chat é fechado externamente, notificar a cena
+      sceneRef.current.stopChat();
+    }
+  };
+
   useEffect(() => {
     if (gameRef.current) return;
 
@@ -34,7 +50,7 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
 
     gameRef.current = new Phaser.Game(config);
     
-    const scene = new GameScene(gameState, onChatToggle, onMemoryTrigger);
+    const scene = new GameScene(gameState, wrappedChatToggle, onMemoryTrigger);
     sceneRef.current = scene;
     gameRef.current.scene.add('GameScene', scene, true);
 

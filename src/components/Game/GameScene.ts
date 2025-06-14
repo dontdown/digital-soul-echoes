@@ -14,14 +14,17 @@ export class GameScene extends Phaser.Scene {
   private echo!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: any;
+  private eKey!: Phaser.Input.Keyboard.Key;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private isNearEcho = false;
+  private isChatting = false;
   private gameState: GameState;
   private onChatToggle: (show: boolean) => void;
   private onMemoryTrigger: (memory: string) => void;
   private echoTarget = { x: 400, y: 300 };
   private echoMoveTimer = 0;
   private isSceneReady = false;
+  private proximityIndicator!: Phaser.GameObjects.Text;
 
   constructor(gameState: GameState, onChatToggle: (show: boolean) => void, onMemoryTrigger: (memory: string) => void) {
     super({ key: 'GameScene' });
@@ -81,9 +84,19 @@ export class GameScene extends Phaser.Scene {
     // Configurar controles
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,S,A,D');
+    this.eKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
     // Configurar animações
     this.createAnimations();
+
+    // Criar indicador de proximidade
+    this.proximityIndicator = this.add.text(0, 0, 'Pressione E para conversar', {
+      fontSize: '14px',
+      color: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 8, y: 4 }
+    });
+    this.proximityIndicator.setVisible(false);
 
     // Timer para movimento do Echo
     this.time.addEvent({
@@ -101,6 +114,8 @@ export class GameScene extends Phaser.Scene {
     this.handlePlayerMovement();
     this.handleEchoMovement();
     this.checkProximity();
+    this.handleInteraction();
+    this.updateProximityIndicator();
   }
 
   private createBackground() {
@@ -167,6 +182,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleEchoMovement() {
+    // Se estiver conversando, Echo fica parado
+    if (this.isChatting) {
+      this.echo.setVelocity(0);
+      return;
+    }
+
     const echoSpeed = this.getEchoSpeed();
     const distance = Phaser.Math.Distance.Between(
       this.echo.x, this.echo.y,
@@ -177,6 +198,49 @@ export class GameScene extends Phaser.Scene {
       this.physics.moveToObject(this.echo, this.echoTarget, echoSpeed);
     } else {
       this.echo.setVelocity(0);
+    }
+  }
+
+  private handleInteraction() {
+    // Verificar se a tecla E foi pressionada e se está perto do Echo
+    if (Phaser.Input.Keyboard.JustDown(this.eKey) && this.isNearEcho && !this.isChatting) {
+      this.startChat();
+    }
+  }
+
+  private updateProximityIndicator() {
+    if (this.isNearEcho && !this.isChatting) {
+      this.proximityIndicator.setVisible(true);
+      this.proximityIndicator.setPosition(this.echo.x - 50, this.echo.y - 50);
+    } else {
+      this.proximityIndicator.setVisible(false);
+    }
+  }
+
+  private startChat() {
+    this.isChatting = true;
+    this.onChatToggle(true);
+    console.log('Chat iniciado - Echo parado');
+  }
+
+  public stopChat() {
+    this.isChatting = false;
+    this.onChatToggle(false);
+    console.log('Chat finalizado - Echo pode se mover novamente');
+  }
+
+  private checkProximity() {
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x, this.player.y,
+      this.echo.x, this.echo.y
+    );
+
+    const wasNear = this.isNearEcho;
+    this.isNearEcho = distance < 100;
+
+    // Se saiu de perto durante o chat, fechar o chat
+    if (!this.isNearEcho && this.isChatting) {
+      this.stopChat();
     }
   }
 
@@ -207,22 +271,6 @@ export class GameScene extends Phaser.Scene {
     // Garantir que o target esteja dentro dos limites
     this.echoTarget.x = Phaser.Math.Clamp(this.echoTarget.x, 50, 750);
     this.echoTarget.y = Phaser.Math.Clamp(this.echoTarget.y, 50, 550);
-  }
-
-  private checkProximity() {
-    const distance = Phaser.Math.Distance.Between(
-      this.player.x, this.player.y,
-      this.echo.x, this.echo.y
-    );
-
-    const wasNear = this.isNearEcho;
-    this.isNearEcho = distance < 100;
-
-    if (this.isNearEcho && !wasNear) {
-      this.onChatToggle(true);
-    } else if (!this.isNearEcho && wasNear) {
-      this.onChatToggle(false);
-    }
   }
 
   private getEchoColor(): number {
@@ -271,5 +319,9 @@ export class GameScene extends Phaser.Scene {
     if (this.echo) {
       this.echo.setTexture(textureKey);
     }
+  }
+
+  public getChatStatus() {
+    return this.isChatting;
   }
 }

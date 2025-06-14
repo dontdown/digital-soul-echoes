@@ -55,6 +55,10 @@ const EchoSoul = () => {
     setGameState((prev: any) => ({ ...prev, echoMood: newMood }));
   };
 
+  const handleChatClose = () => {
+    setShowChat(false);
+  };
+
   if (!gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -135,7 +139,7 @@ const EchoSoul = () => {
           <div className="absolute -bottom-16 left-0 right-0 text-center">
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-lg p-3 inline-block">
               <p className="text-gray-300 text-sm">
-                Use WASD ou setas para mover. Aproxime-se do Echo para conversar.
+                Use WASD ou setas para mover. Pressione E próximo ao Echo para conversar.
               </p>
             </div>
           </div>
@@ -145,20 +149,20 @@ const EchoSoul = () => {
       {/* Game Chat */}
       <GameChat
         isVisible={showChat}
-        onClose={() => setShowChat(false)}
+        onClose={handleChatClose}
         gameState={gameState}
         onMemoryCreate={handleMemoryCreate}
         onEchoMoodChange={handleEchoMoodChange}
       />
 
-      {/* Proximity indicator */}
+      {/* Chat status indicator */}
       {showChat && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-cyan-500/20 border border-cyan-400 rounded-full px-4 py-2 text-cyan-400 text-sm"
         >
-          Echo está próximo - Chat ativo
+          Conversando com Echo - Echo está parado
         </motion.div>
       )}
     </div>
