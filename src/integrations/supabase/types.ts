@@ -72,6 +72,66 @@ export type Database = {
         }
         Relationships: []
       }
+      game_state: {
+        Row: {
+          created_at: string
+          echo_mood: string
+          echo_personality: string
+          echo_sprite: string
+          id: string
+          player_mood: string
+          player_name: string
+          player_preference: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          echo_mood?: string
+          echo_personality: string
+          echo_sprite?: string
+          id?: string
+          player_mood: string
+          player_name: string
+          player_preference: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          echo_mood?: string
+          echo_personality?: string
+          echo_sprite?: string
+          id?: string
+          player_mood?: string
+          player_name?: string
+          player_preference?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      memories: {
+        Row: {
+          created_at: string
+          emotion: string | null
+          id: string
+          memory: string
+          player: string
+        }
+        Insert: {
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          memory: string
+          player: string
+        }
+        Update: {
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          memory?: string
+          player?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
