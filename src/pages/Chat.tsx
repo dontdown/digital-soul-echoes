@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEchoStore } from "@/store/echoStore";
 import { useNavigate } from "react-router-dom";
-import { Send, Mirror, History, Brain } from "lucide-react";
+import { Send, Eye, History, Brain } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -181,7 +180,7 @@ const Chat = () => {
               size="sm"
               className="text-purple-400 hover:text-purple-300"
             >
-              <Mirror className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
             </Button>
             <Button
               onClick={() => navigate("/history")}
