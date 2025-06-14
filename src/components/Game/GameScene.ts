@@ -162,6 +162,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerMovement() {
+    // Se estiver conversando, o jogador não pode se mover
+    if (this.isChatting) {
+      this.player.setVelocity(0);
+      return;
+    }
+
     const speed = 160;
 
     if (this.cursors.left.isDown || this.wasd.A.isDown) {
@@ -220,13 +226,13 @@ export class GameScene extends Phaser.Scene {
   private startChat() {
     this.isChatting = true;
     this.onChatToggle(true);
-    console.log('Chat iniciado - Echo parado');
+    console.log('Chat iniciado - Jogador e Echo parados');
   }
 
   public stopChat() {
     this.isChatting = false;
     this.onChatToggle(false);
-    console.log('Chat finalizado - Echo pode se mover novamente');
+    console.log('Chat finalizado - Jogador e Echo podem se mover novamente');
   }
 
   private checkProximity() {
