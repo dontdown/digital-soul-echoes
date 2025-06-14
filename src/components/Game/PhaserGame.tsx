@@ -13,6 +13,7 @@ interface PhaserGameProps {
 const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: PhaserGameProps) => {
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<GameScene | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Função para fechar o chat
   const handleChatClose = () => {
@@ -31,13 +32,13 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
   };
 
   useEffect(() => {
-    if (gameRef.current) return;
+    if (gameRef.current || !containerRef.current) return;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: 800,
       height: 600,
-      parent: 'phaser-game',
+      parent: containerRef.current,
       physics: {
         default: 'arcade',
         arcade: {
@@ -56,8 +57,10 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
 
     return () => {
       if (gameRef.current) {
+        console.log('Destruindo jogo Phaser');
         gameRef.current.destroy(true);
         gameRef.current = null;
+        sceneRef.current = null;
       }
     };
   }, []);
@@ -74,9 +77,21 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
     }
   }, [gameState.echoMood]);
 
+  // Cleanup quando o componente for desmontado (navegação)
+  useEffect(() => {
+    return () => {
+      if (gameRef.current) {
+        console.log('Componente desmontado - limpando Phaser');
+        gameRef.current.destroy(true);
+        gameRef.current = null;
+        sceneRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div 
-      id="phaser-game" 
+      ref={containerRef}
       className={`border-2 border-slate-600 rounded-lg overflow-hidden ${className}`}
       style={{ width: '800px', height: '600px' }}
     />

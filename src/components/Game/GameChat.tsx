@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { useChatHistory, ChatMessage } from '@/hooks/useChatHistory';
 
 interface GameChatProps {
   isVisible: boolean;
@@ -14,22 +15,8 @@ interface GameChatProps {
   onEchoMoodChange: (mood: string) => void;
 }
 
-interface ChatMessage {
-  id: string;
-  content: string;
-  sender: 'player' | 'echo';
-  timestamp: Date;
-}
-
 const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodChange }: GameChatProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      content: `Olá, ${gameState?.playerName}. Sinto sua presença... Como você está se sentindo neste momento?`,
-      sender: 'echo',
-      timestamp: new Date()
-    }
-  ]);
+  const { messages, addMessage, isLoading } = useChatHistory(gameState?.playerName);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -104,7 +91,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, playerMessage]);
+    await addMessage(playerMessage);
     setInputMessage('');
     setIsTyping(true);
 
@@ -117,9 +104,21 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, echoMessage]);
+    await addMessage(echoMessage);
     setIsTyping(false);
   };
+
+  if (isLoading && isVisible) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-2xl shadow-2xl p-6"
+      >
+        <div className="text-center text-cyan-400">Carregando conversa...</div>
+      </motion.div>
+    );
+  }
 
   return (
     <AnimatePresence>

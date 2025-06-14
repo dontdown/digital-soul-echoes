@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,29 @@ const EchoSoul = () => {
       echoMood,
       echoSprite: 'blue'
     });
+
+    // Salvar estado do jogo no Supabase
+    saveGameState();
   }, [playerData, echoPersonality, echoMood, navigate]);
+
+  const saveGameState = async () => {
+    if (!playerData) return;
+
+    try {
+      await supabase
+        .from('game_state')
+        .insert({
+          player_name: playerData.name,
+          player_mood: playerData.mood,
+          player_preference: playerData.preference,
+          echo_personality: echoPersonality,
+          echo_mood: echoMood,
+          echo_sprite: 'blue'
+        });
+    } catch (error) {
+      console.error('Erro ao salvar estado do jogo:', error);
+    }
+  };
 
   const handleMemoryCreate = async (memory: string) => {
     try {
@@ -50,14 +72,18 @@ const EchoSoul = () => {
     }
   };
 
-  const handleEchoMoodChange = (newMood: string) => {
+  const handleEchoMoodChange = useCallback((newMood: string) => {
     updateEchoMood(newMood);
     setGameState((prev: any) => ({ ...prev, echoMood: newMood }));
-  };
+  }, [updateEchoMood]);
 
-  const handleChatClose = () => {
+  const handleChatClose = useCallback(() => {
     setShowChat(false);
-  };
+  }, []);
+
+  const handleChatToggle = useCallback((show: boolean) => {
+    setShowChat(show);
+  }, []);
 
   if (!gameState) {
     return (
@@ -130,7 +156,7 @@ const EchoSoul = () => {
         >
           <PhaserGame
             gameState={gameState}
-            onChatToggle={setShowChat}
+            onChatToggle={handleChatToggle}
             onMemoryTrigger={handleMemoryCreate}
             className="shadow-2xl"
           />
@@ -162,7 +188,7 @@ const EchoSoul = () => {
           animate={{ opacity: 1 }}
           className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-cyan-500/20 border border-cyan-400 rounded-full px-4 py-2 text-cyan-400 text-sm"
         >
-          Conversando com Echo - Ambos parados durante a conversa
+          Conversando com Echo - Histórico salvo automaticamente
         </motion.div>
       )}
     </div>
