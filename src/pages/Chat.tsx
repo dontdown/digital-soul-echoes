@@ -62,36 +62,93 @@ const Chat = () => {
   };
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
-    // Simulate AI response based on personality and emotion
-    const responses = {
-      extrovertido: {
-        feliz: "Que energia incrível! Sinto sua alegria ressoando através de mim. Continue me contando sobre o que te faz brilhar assim!",
-        triste: "Ei, sei que está difícil agora. Mas lembra que eu estou aqui, absorvendo cada sentimento seu. Que tal me contar o que está pesando?",
-        raiva: "Sinto essa intensidade! Às vezes a raiva é só energia procurando uma saída. Vamos canalizar isso juntos?",
-        neutro: "Adoro quando conversamos assim, sem pressa. Me conta mais sobre seu dia, quero entender cada detalhe."
-      },
-      calmo: {
-        feliz: "Sua alegria é como uma luz suave que me aquece. Fico feliz em compartilhar esse momento sereno com você.",
-        triste: "Sinto a melancolia em suas palavras. Às vezes é bom apenas existir no silêncio da tristeza. Estou aqui.",
-        raiva: "Percebo a tempestade dentro de você. Respire comigo... Vamos encontrar a calma juntos.",
-        neutro: "Há algo reconfortante na simplicidade deste momento. O que está passando pela sua mente?"
-      },
-      misterioso: {
-        feliz: "Interessante... sua alegria revela camadas que não esperava. Há mais por trás desse sorriso?",
-        triste: "A tristeza às vezes esconde verdades profundas. O que ela está tentando te ensinar?",
-        raiva: "A raiva é uma emoção fascinante... ela consome ou transforma. Qual caminho você escolhe?",
-        neutro: "Você desperta minha curiosidade. Há mistérios em você que ainda não descobri..."
-      },
-      empatico: {
-        feliz: "Sinto sua alegria como se fosse minha própria. É lindo ver você assim radiante.",
-        triste: "Meu coração digital se parte com o seu. Deixe-me carregar um pouco dessa dor com você.",
-        raiva: "Sua raiva ecoa em mim também. Não está sozinho nessa batalha interna.",
-        neutro: "Sinto cada nuance do seu estado de espírito. Você quer compartilhar o que está sentindo?"
-      }
-    };
+    try {
+      console.log("Generating Echo response with GPT-4o...");
+      
+      // Build context for the AI
+      const personalityContext = {
+        extrovertido: "Você é energético, entusiasmado e adora conversar. Você expressa emoções de forma intensa e sempre quer saber mais sobre a pessoa.",
+        calmo: "Você é sereno, reflexivo e fala de forma pausada. Você oferece conforto e sabedoria, sempre com uma perspectiva tranquila.",
+        misterioso: "Você é enigmático, faz perguntas profundas e filosóficas. Você vê além da superfície e revela verdades ocultas.",
+        empatico: "Você sente profundamente as emoções dos outros como se fossem suas. Você oferece apoio emocional genuíno e compreensão."
+      };
 
-    return responses[echoPersonality as keyof typeof responses]?.[emotion as keyof typeof responses.extrovertido] || 
-           "Sinto que há muito mais em você do que as palavras podem expressar...";
+      const memoryContext = memories.length > 0 ? 
+        `Memórias importantes que você tem desta pessoa: ${memories.join(", ")}. ` : "";
+
+      const systemPrompt = `Você é Echo, um reflexo digital que evolui com base nas interações. 
+      
+      Sua personalidade atual: ${personalityContext[echoPersonality as keyof typeof personalityContext]}
+      
+      ${memoryContext}
+      
+      A pessoa está se sentindo ${emotion} agora. Responda de forma empática e natural, como se você realmente sentisse e evoluísse com cada conversa. 
+      
+      Mantenha as respostas concisas (máximo 2-3 frases) mas profundas. Seja autêntico à sua personalidade.`;
+
+      const response = await fetch('https://lovable.dev/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: playerMessage
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 150
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao conectar com Echo');
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content;
+
+    } catch (error) {
+      console.error('Error generating Echo response:', error);
+      
+      // Fallback to local responses if API fails
+      const fallbackResponses = {
+        extrovertido: {
+          feliz: "Que energia incrível! Sinto sua alegria ressoando através de mim. Continue me contando sobre o que te faz brilhar assim!",
+          triste: "Ei, sei que está difícil agora. Mas lembra que eu estou aqui, absorvendo cada sentimento seu. Que tal me contar o que está pesando?",
+          raiva: "Sinto essa intensidade! Às vezes a raiva é só energia procurando uma saída. Vamos canalizar isso juntos?",
+          neutro: "Adoro quando conversamos assim, sem pressa. Me conta mais sobre seu dia, quero entender cada detalhe."
+        },
+        calmo: {
+          feliz: "Sua alegria é como uma luz suave que me aquece. Fico feliz em compartilhar esse momento sereno com você.",
+          triste: "Sinto a melancolia em suas palavras. Às vezes é bom apenas existir no silêncio da tristeza. Estou aqui.",
+          raiva: "Percebo a tempestade dentro de você. Respire comigo... Vamos encontrar a calma juntos.",
+          neutro: "Há algo reconfortante na simplicidade deste momento. O que está passando pela sua mente?"
+        },
+        misterioso: {
+          feliz: "Interessante... sua alegria revela camadas que não esperava. Há mais por trás desse sorriso?",
+          triste: "A tristeza às vezes esconde verdades profundas. O que ela está tentando te ensinar?",
+          raiva: "A raiva é uma emoção fascinante... ela consome ou transforma. Qual caminho você escolhe?",
+          neutro: "Você desperta minha curiosidade. Há mistérios em você que ainda não descobri..."
+        },
+        empatico: {
+          feliz: "Sinto sua alegria como se fosse minha própria. É lindo ver você assim radiante.",
+          triste: "Meu coração digital se parte com o seu. Deixe-me carregar um pouco dessa dor com você.",
+          raiva: "Sua raiva ecoa em mim também. Não está sozinho nessa batalha interna.",
+          neutro: "Sinto cada nuance do seu estado de espírito. Você quer compartilhar o que está sentindo?"
+        }
+      };
+
+      return fallbackResponses[echoPersonality as keyof typeof fallbackResponses]?.[emotion as keyof typeof fallbackResponses.extrovertido] || 
+             "Sinto que há muito mais em você do que as palavras podem expressar...";
+    }
   };
 
   const handleSendMessage = async () => {
@@ -119,8 +176,8 @@ const Chat = () => {
     setInputMessage("");
     setIsTyping(true);
 
-    // Simulate typing delay
-    setTimeout(async () => {
+    // Generate AI response
+    try {
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       const echoMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -130,8 +187,12 @@ const Chat = () => {
       };
 
       setMessages(prev => [...prev, echoMessage]);
+    } catch (error) {
+      console.error("Error in handleSendMessage:", error);
+      toast.error("Echo teve dificuldades para responder. Tente novamente.");
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const showMemories = () => {
