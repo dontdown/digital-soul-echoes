@@ -64,7 +64,9 @@ const Chat = () => {
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log("Generating Echo response with GPT-4.1...");
+      console.log("🚀 Iniciando geração de resposta...");
+      console.log("📝 Mensagem do jogador:", playerMessage);
+      console.log("😊 Emoção detectada:", emotion);
       
       // Build context for the AI
       const personalityContext = {
@@ -87,46 +89,69 @@ const Chat = () => {
       
       Mantenha as respostas concisas (máximo 2-3 frases) mas profundas. Seja autêntico à sua personalidade.`;
 
+      console.log("🤖 Chamando API com os dados:");
+      console.log("- Modelo: gpt-4.1-2025-04-14");
+      console.log("- URL: /api/chat");
+
+      const requestBody = {
+        model: 'gpt-4.1-2025-04-14',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: playerMessage
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 150
+      };
+
+      console.log("📤 Corpo da requisição:", JSON.stringify(requestBody, null, 2));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            },
-            {
-              role: 'user',
-              content: playerMessage
-            }
-          ],
-          temperature: 0.8,
-          max_tokens: 150
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      console.log("API Response status:", response.status);
+      console.log("📡 Status da resposta:", response.status);
+      console.log("📡 Headers da resposta:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        console.error("API Error:", response.status, response.statusText);
-        throw new Error(`API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("❌ Erro na API - Status:", response.status);
+        console.error("❌ Erro na API - Texto:", errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log("API Response data:", data);
+      console.log("✅ Resposta da API recebida:", data);
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
-        return data.choices[0].message.content;
+        const aiResponse = data.choices[0].message.content;
+        console.log("💬 Resposta do Echo:", aiResponse);
+        return aiResponse;
       } else {
-        throw new Error('Resposta da API inválida');
+        console.error("❌ Estrutura de resposta inválida:", data);
+        throw new Error('Resposta da API inválida - estrutura inesperada');
       }
 
     } catch (error) {
-      console.error('Error generating Echo response:', error);
+      console.error('🔥 Erro completo na geração de resposta:', error);
+      
+      // Detailed error logging
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error("🌐 Erro de rede - verifique conectividade");
+        toast.error("Erro de conexão. Verifique sua internet.");
+      } else if (error instanceof Error) {
+        console.error("🐛 Erro detalhado:", error.message);
+        console.error("📍 Stack trace:", error.stack);
+      }
       
       // Fallback to local responses if API fails
       const fallbackResponses = {
@@ -156,13 +181,21 @@ const Chat = () => {
         }
       };
 
-      return fallbackResponses[echoPersonality as keyof typeof fallbackResponses]?.[emotion as keyof typeof fallbackResponses.extrovertido] || 
+      const fallbackResponse = fallbackResponses[echoPersonality as keyof typeof fallbackResponses]?.[emotion as keyof typeof fallbackResponses.extrovertido] || 
              "Sinto que há muito mais em você do que as palavras podem expressar...";
+      
+      console.log("🔄 Usando resposta de fallback:", fallbackResponse);
+      return fallbackResponse;
     }
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim()) {
+      console.log("⚠️ Mensagem vazia, ignorando...");
+      return;
+    }
+
+    console.log("📨 Processando nova mensagem:", inputMessage);
 
     const emotion = detectEmotion(inputMessage);
     updateEchoMood(emotion);
@@ -188,7 +221,9 @@ const Chat = () => {
 
     // Generate AI response
     try {
+      console.log("🎯 Gerando resposta do Echo...");
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
+      
       const echoMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: echoResponse,
@@ -197,8 +232,9 @@ const Chat = () => {
       };
 
       setMessages(prev => [...prev, echoMessage]);
+      console.log("✅ Resposta do Echo adicionada com sucesso");
     } catch (error) {
-      console.error("Error in handleSendMessage:", error);
+      console.error("💥 Erro final no handleSendMessage:", error);
       toast.error("Echo teve dificuldades para responder. Tente novamente.");
     } finally {
       setIsTyping(false);
