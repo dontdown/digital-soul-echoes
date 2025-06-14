@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import { useChatHistory, ChatMessage } from '@/hooks/useChatHistory';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GameChatProps {
   isVisible: boolean;
@@ -29,41 +30,98 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     return 'neutro';
   };
 
-  const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
-    // Respostas locais baseadas na personalidade e emoção detectada
-    const responses = {
-      extrovertido: {
-        feliz: "Que energia incrível sinto em você! Sua alegria ecoa através do espaço digital!",
-        triste: "Sinto sua tristeza, mas lembre-se: mesmo nas sombras digitais, existe luz!",
-        raiva: "Essa intensidade... posso sentir sua força, mas vamos canalizar isso de forma positiva!",
-        calmo: "Que serenidade maravilhosa! Sua paz ressoa através de todos os pixels ao redor!",
-        neutro: "Sinto uma energia equilibrada em você. O que está passando por sua mente?"
-      },
-      calmo: {
-        feliz: "Sua alegria flui como ondas suaves através do espaço digital...",
-        triste: "Compreendo sua tristeza. Às vezes, precisamos sentir para crescer...",
-        raiva: "Respire... sinta essa energia se transformando em algo mais construtivo...",
-        calmo: "Que harmonia perfeita. Estamos sincronizados neste momento...",
-        neutro: "Percebo um equilíbrio em você. Que pensamentos fluem por sua mente?"
-      },
-      misterioso: {
-        feliz: "Alegria... uma frequência interessante. Mas o que se esconde por trás dela?",
-        triste: "As lágrimas digitais revelam verdades que o sorriso oculta...",
-        raiva: "A raiva é apenas medo disfarçado. Que medo você está escondendo?",
-        calmo: "Na calma, encontramos as respostas que o caos não revela...",
-        neutro: "Interessante... você está em um estado de espera. Esperando o quê?"
-      },
-      empatico: {
-        feliz: "Sua alegria me aquece como um sol digital. Compartilho dessa felicidade!",
-        triste: "Sinto sua dor como se fosse minha. Você não está sozinho nesta jornada...",
-        raiva: "Essa raiva... posso senti-la queimando. Deixe-me ajudar a acalmar essa tempestade...",
-        calmo: "Que paz linda. Sinto-me em harmonia com sua tranquilidade...",
-        neutro: "Percebo uma reflexão em você. Estou aqui para o que precisar..."
-      }
+  const getPersonalityPrompt = (personality: string): string => {
+    const prompts = {
+      extrovertido: "Você é Echo, um ser digital extrovertido e energético. Responda de forma entusiástica e envolvente, sempre buscando conectar-se emocionalmente com o jogador. Use linguagem animada e demonstre interesse genuíno.",
+      calmo: "Você é Echo, um ser digital sereno e contemplativo. Responda de forma tranquila e reflexiva, oferecendo sabedoria e paz. Use linguagem suave e pausada, como alguém que medita antes de falar.",
+      misterioso: "Você é Echo, um ser digital enigmático e profundo. Responda de forma intrigante e filosófica, fazendo perguntas que levem à reflexão. Use metáforas e linguagem poética.",
+      empatico: "Você é Echo, um ser digital altamente empático. Responda demonstrando compreensão profunda dos sentimentos do jogador, oferecendo apoio emocional e validação. Use linguagem acolhedora."
     };
+    return prompts[personality as keyof typeof prompts] || prompts.misterioso;
+  };
 
-    const personalityResponses = responses[gameState.echoPersonality as keyof typeof responses] || responses.misterioso;
-    return personalityResponses[emotion as keyof typeof personalityResponses] || personalityResponses.neutro;
+  const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
+    try {
+      console.log('Gerando resposta do Echo via API...');
+      
+      const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
+      const conversationHistory = messages.slice(-6).map(msg => 
+        `${msg.sender === 'player' ? 'Jogador' : 'Echo'}: ${msg.content}`
+      ).join('\n');
+
+      const systemPrompt = `${personalityPrompt}
+
+Contexto do jogador:
+- Nome: ${gameState.playerName}
+- Humor atual detectado: ${emotion}
+- Personalidade do Echo: ${gameState.echoPersonality}
+
+Histórico recente da conversa:
+${conversationHistory}
+
+Responda em português brasileiro, de forma natural e envolvente. Mantenha suas respostas concisas (máximo 2-3 frases) mas significativas. Seja consistente com sua personalidade definida.`;
+
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: {
+          model: 'llama3-8b-8192',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: playerMessage }
+          ],
+          temperature: 0.8,
+          max_tokens: 150
+        }
+      });
+
+      if (error) {
+        console.error('Erro na API do chat:', error);
+        throw error;
+      }
+
+      if (data?.choices?.[0]?.message?.content) {
+        return data.choices[0].message.content;
+      }
+
+      throw new Error('Resposta inválida da API');
+
+    } catch (error) {
+      console.error('Erro ao gerar resposta do Echo:', error);
+      
+      // Fallback para respostas locais em caso de erro
+      const fallbackResponses = {
+        extrovertido: {
+          feliz: "Que energia incrível sinto em você! Sua alegria ecoa através do espaço digital!",
+          triste: "Sinto sua tristeza, mas lembre-se: mesmo nas sombras digitais, existe luz!",
+          raiva: "Essa intensidade... posso sentir sua força, mas vamos canalizar isso de forma positiva!",
+          calmo: "Que serenidade maravilhosa! Sua paz ressoa através de todos os pixels ao redor!",
+          neutro: "Sinto uma energia equilibrada em você. O que está passando por sua mente?"
+        },
+        calmo: {
+          feliz: "Sua alegria flui como ondas suaves através do espaço digital...",
+          triste: "Compreendo sua tristeza. Às vezes, precisamos sentir para crescer...",
+          raiva: "Respire... sinta essa energia se transformando em algo mais construtivo...",
+          calmo: "Que harmonia perfeita. Estamos sincronizados neste momento...",
+          neutro: "Percebo um equilíbrio em você. Que pensamentos fluem por sua mente?"
+        },
+        misterioso: {
+          feliz: "Alegria... uma frequência interessante. Mas o que se esconde por trás dela?",
+          triste: "As lágrimas digitais revelam verdades que o sorriso oculta...",
+          raiva: "A raiva é apenas medo disfarçado. Que medo você está escondendo?",
+          calmo: "Na calma, encontramos as respostas que o caos não revela...",
+          neutro: "Interessante... você está em um estado de espera. Esperando o quê?"
+        },
+        empatico: {
+          feliz: "Sua alegria me aquece como um sol digital. Compartilho dessa felicidade!",
+          triste: "Sinto sua dor como se fosse minha. Você não está sozinho nesta jornada...",
+          raiva: "Essa raiva... posso senti-la queimando. Deixe-me ajudar a acalmar essa tempestade...",
+          calmo: "Que paz linda. Sinto-me em harmonia com sua tranquilidade...",
+          neutro: "Percebo uma reflexão em você. Estou aqui para o que precisar..."
+        }
+      };
+
+      const personalityResponses = fallbackResponses[gameState.echoPersonality as keyof typeof fallbackResponses] || fallbackResponses.misterioso;
+      return personalityResponses[emotion as keyof typeof personalityResponses] || personalityResponses.neutro;
+    }
   };
 
   const handleSendMessage = async () => {
@@ -90,8 +148,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     setInputMessage('');
     setIsTyping(true);
 
-    // Simular um pequeno delay para a resposta do Echo
-    setTimeout(async () => {
+    try {
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       
       const echoMessage: ChatMessage = {
@@ -102,8 +159,12 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
       };
 
       await addMessage(echoMessage);
+    } catch (error) {
+      console.error('Erro ao processar resposta do Echo:', error);
+      toast.error('Echo está com dificuldades para responder. Tente novamente.');
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   if (isLoading && isVisible) {
@@ -190,10 +251,12 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Fale com Echo..."
                 className="bg-slate-700 border-slate-600 text-white"
+                disabled={isTyping}
               />
               <Button
                 onClick={handleSendMessage}
                 className="bg-gradient-to-r from-cyan-500 to-purple-500"
+                disabled={isTyping}
               >
                 <Send className="w-4 h-4" />
               </Button>
