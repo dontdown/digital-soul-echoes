@@ -47,8 +47,14 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
   }, []);
 
   useEffect(() => {
+    // Só atualizar o mood se a cena e o Echo existirem
     if (sceneRef.current) {
-      sceneRef.current.updateEchoMood(gameState.echoMood);
+      // Usar um pequeno delay para garantir que a cena esteja completamente carregada
+      const timer = setTimeout(() => {
+        sceneRef.current?.updateEchoMood(gameState.echoMood);
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [gameState.echoMood]);
 

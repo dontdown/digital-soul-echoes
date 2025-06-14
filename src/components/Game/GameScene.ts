@@ -1,4 +1,3 @@
-
 import Phaser from 'phaser';
 
 export interface GameState {
@@ -22,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   private onMemoryTrigger: (memory: string) => void;
   private echoTarget = { x: 400, y: 300 };
   private echoMoveTimer = 0;
+  private isSceneReady = false;
 
   constructor(gameState: GameState, onChatToggle: (show: boolean) => void, onMemoryTrigger: (memory: string) => void) {
     super({ key: 'GameScene' });
@@ -92,6 +92,9 @@ export class GameScene extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
+
+    // Marcar que a cena está pronta
+    this.isSceneReady = true;
   }
 
   update() {
@@ -244,15 +247,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   public updateEchoMood(newMood: string) {
+    // Verificar se a cena está pronta antes de tentar usar graphics
+    if (!this.isSceneReady || !this.add) {
+      console.log('Cena não está pronta ainda, atualizando mood mais tarde');
+      this.gameState.echoMood = newMood;
+      return;
+    }
+
     this.gameState.echoMood = newMood;
     const newColor = this.getEchoColor();
     
-    // Recriar texture do Echo
-    this.add.graphics()
-      .fillStyle(newColor)
-      .fillRect(0, 0, 32, 32)
-      .generateTexture('echo-' + newMood, 32, 32);
+    // Verificar se já existe uma texture com esse mood para evitar duplicatas
+    const textureKey = 'echo-' + newMood;
+    if (!this.textures.exists(textureKey)) {
+      // Recriar texture do Echo
+      this.add.graphics()
+        .fillStyle(newColor)
+        .fillRect(0, 0, 32, 32)
+        .generateTexture(textureKey, 32, 32);
+    }
     
-    this.echo.setTexture('echo-' + newMood);
+    // Atualizar sprite do Echo
+    if (this.echo) {
+      this.echo.setTexture(textureKey);
+    }
   }
 }
