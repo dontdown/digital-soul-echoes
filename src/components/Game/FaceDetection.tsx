@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useFaceDetection, DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Download } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -90,11 +90,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   };
 
-  const handleDownloadModels = () => {
-    window.open('https://github.com/justadudewhohacks/face-api.js/tree/master/weights', '_blank');
-    toast.info('Baixe os modelos e coloque na pasta public/models/');
-  };
-
   if (!isVisible) return null;
 
   return (
@@ -110,11 +105,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium">Face-API.js</span>
-            {detectionError?.includes('simulada') ? (
-              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">SIM</span>
-            ) : (
-              <Zap className="w-3 h-3 text-yellow-400" />
-            )}
+            <Zap className="w-3 h-3 text-yellow-400" />
           </div>
           <Button
             onClick={handleToggleDetection}
@@ -133,9 +124,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             {isModelLoaded ? (
               <>
                 <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">
-                  {detectionError?.includes('simulada') ? 'Modo simulado ativo' : 'IA real carregada'}
-                </span>
+                <span className="text-green-400">IA real carregada</span>
               </>
             ) : (
               <>
@@ -173,26 +162,14 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             </div>
           )}
 
-          {/* Erro de detecção / Status */}
+          {/* Erro de detecção */}
           {detectionError && (
-            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-orange-400 text-sm">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>Info:</span>
-                </div>
-                {detectionError.includes('modelos') && (
-                  <Button
-                    onClick={handleDownloadModels}
-                    variant="ghost"
-                    size="sm"
-                    className="text-orange-400 hover:text-orange-300 p-1"
-                  >
-                    <Download className="w-3 h-3" />
-                  </Button>
-                )}
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-2">
+              <div className="flex items-center space-x-2 text-red-400 text-sm">
+                <AlertCircle className="w-3 h-3" />
+                <span>Erro:</span>
               </div>
-              <div className="text-orange-300 text-xs mt-1">{detectionError}</div>
+              <div className="text-red-300 text-xs mt-1">{detectionError}</div>
             </div>
           )}
 
@@ -208,9 +185,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               </div>
               <div className="text-xs text-gray-400 mt-1">
                 Confiança: {Math.round(confidence * 100)}%
-                {detectionError?.includes('simulada') && (
-                  <span className="text-orange-400 ml-2">(simulado)</span>
-                )}
               </div>
             </div>
           )}
@@ -232,9 +206,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             {isDetecting && (
               <div className="absolute top-2 right-2 flex items-center space-x-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-white text-xs bg-black/50 px-1 rounded">
-                  {detectionError?.includes('simulada') ? 'SIM' : 'REC'}
-                </span>
+                <span className="text-white text-xs bg-black/50 px-1 rounded">REC</span>
               </div>
             )}
             
@@ -251,11 +223,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          {detectionError?.includes('simulada') ? (
-            '🎭 Modo Simulado - Baixe modelos para IA real!'
-          ) : (
-            '🚀 Powered by Face-API.js - IA Real!'
-          )}
+          🚀 Powered by Face-API.js - IA Real!
         </div>
       </motion.div>
     </AnimatePresence>
