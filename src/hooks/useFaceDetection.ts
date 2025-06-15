@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 
 export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
@@ -135,7 +134,7 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
       baseConfidence = 0.65 + Math.random() * 0.2;
     } else {
       // Casos neutros ou aleatórios
-      const emotions: DetectedEmotion[] = ['neutro', 'feliz', 'calmo'];
+      const emotions: DetectedEmotion[] = ['neutro', 'feliz', 'neutro'];
       detectedEmotion = emotions[Math.floor(Math.random() * emotions.length)] as DetectedEmotion;
       baseConfidence = 0.5 + Math.random() * 0.3;
     }
