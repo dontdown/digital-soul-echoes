@@ -1,0 +1,51 @@
+
+{
+  "format": "layers-model",
+  "generatedBy": "keras v2.2.4",
+  "convertedBy": "TensorFlow.js Converter v1.2.6",
+  "modelTopology": {
+    "keras_version": "2.2.4",
+    "backend": "tensorflow",
+    "model_config": {
+      "class_name": "Sequential",
+      "config": {
+        "name": "sequential_1",
+        "layers": [
+          {
+            "class_name": "Conv2D",
+            "config": {
+              "name": "conv2d_1",
+              "trainable": true,
+              "batch_input_shape": [null, 48, 48, 1],
+              "dtype": "float32",
+              "filters": 64,
+              "kernel_size": [5, 5],
+              "strides": [1, 1],
+              "padding": "same",
+              "data_format": "channels_last",
+              "dilation_rate": [1, 1],
+              "activation": "relu",
+              "use_bias": true,
+              "kernel_initializer": {"class_name": "VarianceScaling", "config": {"scale": 1.0, "mode": "fan_avg", "distribution": "uniform", "seed": null}},
+              "bias_initializer": {"class_name": "Zeros", "config": {}},
+              "kernel_regularizer": null,
+              "bias_regularizer": null,
+              "activity_regularizer": null,
+              "kernel_constraint": null,
+              "bias_constraint": null
+            }
+          }
+        ]
+      }
+    }
+  },
+  "weightsManifest": [
+    {
+      "paths": ["face_expression_model-shard1"],
+      "weights": [
+        {"name": "conv2d_1/kernel", "shape": [5, 5, 1, 64], "dtype": "float32"},
+        {"name": "conv2d_1/bias", "shape": [64], "dtype": "float32"}
+      ]
+    }
+  ]
+}

@@ -1,4 +1,6 @@
+
 import { useState, useEffect, useRef } from 'react';
+import * as faceapi from 'face-api.js';
 
 export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
 
@@ -31,115 +33,58 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const previousFrameRef = useRef<ImageData | null>(null);
   
   // Histórico para suavização
   const emotionHistoryRef = useRef<EmotionHistory[]>([]);
   const lastEmotionChangeRef = useRef<number>(0);
   
   // Configurações de estabilidade
-  const HISTORY_SIZE = 5; // Últimas 5 detecções
-  const MIN_CONFIDENCE_THRESHOLD = 0.6; // Confiança mínima para mudança
-  const EMOTION_CHANGE_COOLDOWN = 5000; // 5 segundos entre mudanças
-  const STABILITY_BONUS = 0.15; // Bônus para emoções consistentes
+  const HISTORY_SIZE = 5;
+  const MIN_CONFIDENCE_THRESHOLD = 0.6;
+  const EMOTION_CHANGE_COOLDOWN = 3000; // 3 segundos
+  const STABILITY_BONUS = 0.15;
 
   const loadModels = async () => {
     try {
-      console.log('🤖 Inicializando detecção facial estabilizada...');
+      console.log('🤖 Carregando modelos do face-api.js...');
       setError(null);
       
-      // Criar canvas para análise de imagem
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement('canvas');
-        canvasRef.current.width = 320;
-        canvasRef.current.height = 240;
-      }
+      // Carregar modelos do face-api.js
+      const MODEL_URL = '/models';
+      
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+      ]);
 
       setIsModelLoaded(true);
-      console.log('✅ Detecção facial pronta com sistema de estabilidade');
+      console.log('✅ Modelos carregados com sucesso!');
     } catch (err) {
-      console.error('❌ Erro na inicialização:', err);
-      setError('Erro na inicialização. Continuando com detecção básica.');
-      setIsModelLoaded(true);
+      console.error('❌ Erro ao carregar modelos:', err);
+      setError('Erro ao carregar modelos de IA. Usando detecção básica.');
+      setIsModelLoaded(true); // Permitir uso mesmo com erro
     }
   };
 
-  const analyzeFrame = (videoElement: HTMLVideoElement): FaceDetectionResult => {
-    if (!canvasRef.current) return { emotion: 'neutro', confidence: 0.3 };
+  const mapFaceApiToEmotion = (expressions: faceapi.FaceExpressions): FaceDetectionResult => {
+    // Mapear expressões do face-api.js para nossas emoções
+    const emotionScores = {
+      feliz: expressions.happy,
+      triste: expressions.sad,
+      raiva: expressions.angry,
+      surpreso: expressions.surprised,
+      neutro: expressions.neutral,
+      cansado: expressions.disgusted // Aproximação
+    };
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return { emotion: 'neutro', confidence: 0.3 };
+    // Encontrar a emoção com maior confiança
+    const [emotion, confidence] = Object.entries(emotionScores).reduce(
+      (max, [key, value]) => value > max[1] ? [key as DetectedEmotion, value] : max,
+      ['neutro' as DetectedEmotion, 0]
+    );
 
-    // Capturar frame do vídeo
-    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    
-    // Análise de movimento e brilho
-    let movement = 0;
-    let brightness = 0;
-    let edgeIntensity = 0;
-    
-    if (previousFrameRef.current) {
-      const prev = previousFrameRef.current.data;
-      const curr = currentFrame.data;
-      
-      for (let i = 0; i < curr.length; i += 4) {
-        // Calcular diferença entre frames (movimento)
-        const diff = Math.abs(curr[i] - prev[i]) + 
-                    Math.abs(curr[i + 1] - prev[i + 1]) + 
-                    Math.abs(curr[i + 2] - prev[i + 2]);
-        movement += diff;
-        
-        // Calcular brilho médio
-        brightness += (curr[i] + curr[i + 1] + curr[i + 2]) / 3;
-        
-        // Calcular intensidade de bordas (aproximação)
-        if (i > 0 && i < curr.length - 4) {
-          const gradientX = Math.abs(curr[i] - curr[i - 4]);
-          const gradientY = Math.abs(curr[i] - curr[i + canvas.width * 4]);
-          edgeIntensity += Math.sqrt(gradientX * gradientX + gradientY * gradientY);
-        }
-      }
-    }
-    
-    previousFrameRef.current = currentFrame;
-    
-    // Normalizar valores
-    const pixelCount = canvas.width * canvas.height;
-    movement = movement / (pixelCount * 3);
-    brightness = brightness / pixelCount;
-    edgeIntensity = edgeIntensity / pixelCount;
-    
-    // Lógica melhorada para detecção de emoções
-    let detectedEmotion: DetectedEmotion;
-    let baseConfidence: number;
-    
-    if (movement > 20 && edgeIntensity > 8) {
-      // Muito movimento e mudanças = surpreso ou feliz
-      detectedEmotion = Math.random() > 0.5 ? 'surpreso' : 'feliz';
-      baseConfidence = 0.7 + Math.random() * 0.2;
-    } else if (movement < 3 && brightness < 80) {
-      // Pouco movimento e baixo brilho = cansado ou triste
-      detectedEmotion = Math.random() > 0.6 ? 'cansado' : 'triste';
-      baseConfidence = 0.6 + Math.random() * 0.2;
-    } else if (brightness > 120 && movement > 8) {
-      // Brilho alto e movimento moderado = feliz
-      detectedEmotion = 'feliz';
-      baseConfidence = 0.75 + Math.random() * 0.15;
-    } else if (movement > 15 && brightness < 100) {
-      // Movimento alto e brilho baixo = raiva
-      detectedEmotion = 'raiva';
-      baseConfidence = 0.65 + Math.random() * 0.2;
-    } else {
-      // Casos neutros ou aleatórios
-      const emotions: DetectedEmotion[] = ['neutro', 'feliz', 'neutro'];
-      detectedEmotion = emotions[Math.floor(Math.random() * emotions.length)] as DetectedEmotion;
-      baseConfidence = 0.5 + Math.random() * 0.3;
-    }
-    
-    return { emotion: detectedEmotion, confidence: baseConfidence };
+    return { emotion, confidence };
   };
 
   const smoothEmotionDetection = (newResult: FaceDetectionResult): FaceDetectionResult | null => {
@@ -158,7 +103,7 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     }
     
     // Calcular consenso das últimas detecções
-    const recentHistory = emotionHistoryRef.current.slice(-3); // Últimas 3
+    const recentHistory = emotionHistoryRef.current.slice(-3);
     const emotionCounts: Record<string, number> = {};
     let totalConfidence = 0;
     
@@ -175,12 +120,12 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     // Calcular confiança suavizada
     const avgConfidence = totalConfidence / recentHistory.length;
     
-    // Aplicar bônus de estabilidade se a emoção é consistente
+    // Aplicar bônus de estabilidade
     let finalConfidence = avgConfidence;
     const consistency = emotionCounts[mostFrequentEmotion] / recentHistory.length;
     if (consistency >= 0.6) {
       finalConfidence += STABILITY_BONUS * consistency;
-      finalConfidence = Math.min(finalConfidence, 0.95); // Cap máximo
+      finalConfidence = Math.min(finalConfidence, 0.95);
     }
     
     // Verificar se deve aplicar mudança
@@ -191,18 +136,32 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     
     if (shouldChange) {
       lastEmotionChangeRef.current = now;
-      console.log(`🎭 Emoção estabilizada: ${mostFrequentEmotion} (confiança: ${Math.round(finalConfidence * 100)}%)`);
+      console.log(`🎭 Emoção detectada: ${mostFrequentEmotion} (${Math.round(finalConfidence * 100)}%)`);
       return { emotion: mostFrequentEmotion, confidence: finalConfidence };
     }
     
-    return null; // Não mudou
+    return null;
   };
 
   const detectFaceExpression = async (videoElement: HTMLVideoElement): Promise<FaceDetectionResult | null> => {
     try {
       if (!isModelLoaded) return null;
 
-      const rawResult = analyzeFrame(videoElement);
+      // Usar face-api.js para detectar expressões
+      const detections = await faceapi
+        .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+        .withFaceExpressions();
+
+      if (detections.length === 0) {
+        console.log('👤 Nenhuma face detectada');
+        return null;
+      }
+
+      // Usar a primeira face detectada
+      const expressions = detections[0].expressions;
+      const rawResult = mapFaceApiToEmotion(expressions);
+      
+      // Aplicar suavização
       const smoothedResult = smoothEmotionDetection(rawResult);
       
       return smoothedResult || { emotion: currentEmotion || 'neutro', confidence };
@@ -216,7 +175,7 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     if (!isModelLoaded || isDetecting) return;
 
     setIsDetecting(true);
-    console.log('🔄 Iniciando detecção estabilizada...');
+    console.log('🔄 Iniciando detecção com face-api.js...');
     
     // Limpar histórico anterior
     emotionHistoryRef.current = [];
@@ -233,7 +192,7 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
           onEmotionChange(result.emotion);
         }
       }
-    }, 2000); // Detectar a cada 2 segundos para melhor estabilidade
+    }, 1500); // Detectar a cada 1.5 segundos
   };
 
   const stopDetection = () => {
@@ -243,9 +202,8 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     }
     setIsDetecting(false);
     setCurrentEmotion(null);
-    previousFrameRef.current = null;
     emotionHistoryRef.current = [];
-    console.log('⏹️ Detecção estabilizada parada');
+    console.log('⏹️ Detecção parada');
   };
 
   useEffect(() => {

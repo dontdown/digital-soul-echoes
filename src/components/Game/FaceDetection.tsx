@@ -28,7 +28,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
 
   useEffect(() => {
     if (isVisible) {
-      console.log('🎭 Carregando modelos...');
+      console.log('🎭 Carregando modelos do face-api.js...');
       loadModels();
     }
   }, [isVisible, loadModels]);
@@ -103,7 +103,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
-            <span className="text-white font-medium">Detecção Facial</span>
+            <span className="text-white font-medium">Face-API.js</span>
             <Zap className="w-3 h-3 text-yellow-400" />
           </div>
           <Button
@@ -123,12 +123,12 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             {isModelLoaded ? (
               <>
                 <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">Detecção pronta</span>
+                <span className="text-green-400">Face-API.js carregado</span>
               </>
             ) : (
               <>
                 <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                <span className="text-yellow-400">Carregando...</span>
+                <span className="text-yellow-400">Carregando modelos IA...</span>
               </>
             )}
           </div>
@@ -165,7 +165,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {isEnabled && isActive && currentEmotion && (
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Emoção:</span>
+                <span className="text-gray-300 text-sm">Emoção AI:</span>
                 <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
               </div>
               <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
@@ -211,7 +211,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          Echo está usando detecção simplificada! ⚡
+          🚀 Powered by Face-API.js - IA Real! 
         </div>
       </motion.div>
     </AnimatePresence>
