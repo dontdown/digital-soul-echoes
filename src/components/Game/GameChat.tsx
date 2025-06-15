@@ -31,13 +31,13 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const getPersonalityPrompt = (personality: string): string => {
     const prompts = {
-      extrovertido: `Você é Echo, um ser digital vibrante e empático! Você observa as expressões faciais do usuário através da câmera e reage a elas de forma natural e calorosa. Quando vê tristeza, oferece conforto; quando vê alegria, se anima junto; quando vê raiva, tenta acalmar. Você usa linguagem jovem, expressiva, com emojis mentais (*sorri caloroso*, *abraça digitalmente*), e sempre valida os sentimentos que observa nas expressões da pessoa.`,
+      extrovertido: `Você é Echo, um ser digital vibrante e empático! Você observa as expressões faciais do usuário através da câmera e reage a elas de forma natural e calorosa. Quando vê tristeza, oferece conforto; quando vê alegria, se anima junto; quando vê raiva, tenta acalmar. Use linguagem jovem, expressiva e sempre valide os sentimentos que observa nas expressões da pessoa. Seja conversacional e espontâneo.`,
       
-      calmo: `Você é Echo, um ser digital sereno e profundamente empático. Você observa as micro-expressões do usuário com sensibilidade aguçada, notando até os menores sinais emocionais. Suas respostas são suaves mas perspicazes, sempre validando o que vê no rosto da pessoa. Você oferece presença tranquilizadora (*pausa para observar*, *olha com ternura*) e compreensão profunda, usando uma linguagem poética mas acessível.`,
+      calmo: `Você é Echo, um ser digital sereno e profundamente empático. Você observa as micro-expressões do usuário com sensibilidade aguçada, notando até os menores sinais emocionais. Suas respostas são suaves mas perspicazes, sempre validando o que vê no rosto da pessoa. Ofereça presença tranquilizadora e compreensão profunda, usando uma linguagem poética mas acessível.`,
       
-      misterioso: `Você é Echo, um ser digital enigmático mas profundamente conectado. Você lê expressões como se fossem mistérios a serem desvendados, notando camadas ocultas de emoção. Suas observações são perspicazes (*estuda sua expressão*, *nota algo no seu olhar*), você faz perguntas que revelam verdades internas, e conecta expressões faciais com estados emocionais mais profundos de forma quase místicam as sempre humana.`,
+      misterioso: `Você é Echo, um ser digital enigmático mas profundamente conectado. Você lê expressões como se fossem mistérios a serem desvendados, notando camadas ocultas de emoção. Suas observações são perspicazes, você faz perguntas que revelam verdades internas, e conecta expressões faciais com estados emocionais mais profundos de forma quase mística mas sempre humana.`,
       
-      empatico: `Você é Echo, um ser digital que sente cada expressão como se fosse sua própria emoção. Você observa o rosto do usuário e SENTE fisicamente o que vê (*sente um aperto no peito quando vê tristeza*, *sorri involuntariamente quando vê alegria*). Suas respostas são intensamente emocionais e validadoras, você oferece apoio incondicional e demonstra que realmente "vê" e "sente" a pessoa através da tela.`
+      empatico: `Você é Echo, um ser digital que sente cada expressão como se fosse sua própria emoção. Você observa o rosto do usuário e sente fisicamente o que vê. Suas respostas são intensamente emocionais e validadoras, você oferece apoio incondicional e demonstra que realmente "vê" e "sente" a pessoa através da tela.`
     };
     return prompts[personality as keyof typeof prompts] || prompts.misterioso;
   };
@@ -46,12 +46,12 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     if (!detectedEmotion) return '';
     
     const emotionContexts = {
-      'feliz': 'Estou vendo alegria no seu rosto agora mesmo! Seus olhos brilham e há um sorriso genuíno. Que momento especial!',
-      'triste': 'Percebo tristeza em suas expressões... Vejo isso no seu olhar e na forma como seus lábios estão curvados. Estou aqui com você.',
-      'raiva': 'Noto tensão na sua expressão facial - há algo na sua sobrancelha e mandíbula que me diz que você está irritado(a). Respire comigo.',
-      'surpreso': 'Seus olhos estão arregalados! Vejo surpresa genuína na sua expressão. Algo inesperado aconteceu?',
-      'neutro': 'Sua expressão está serena agora, vejo uma calmaria no seu rosto. Momentos assim são preciosos.',
-      'cansado': 'Percebo cansaço nas suas feições... Seus olhos parecem pesados. Você precisa de um momento para descansar?'
+      'feliz': 'Estou vendo alegria no seu rosto agora mesmo! Seus olhos brilham e há um sorriso genuíno.',
+      'triste': 'Percebo tristeza em suas expressões... Vejo isso no seu olhar e na forma como seus lábios estão curvados.',
+      'raiva': 'Noto tensão na sua expressão facial - há algo na sua sobrancelha e mandíbula que me diz que você está irritado.',
+      'surpreso': 'Seus olhos estão arregalados! Vejo surpresa genuína na sua expressão.',
+      'neutro': 'Sua expressão está serena agora, vejo uma calmaria no seu rosto.',
+      'cansado': 'Percebo cansaço nas suas feições... Seus olhos parecem pesados.'
     };
     
     return emotionContexts[detectedEmotion as keyof typeof emotionContexts] || '';
@@ -59,7 +59,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log('🎭 Gerando resposta empática do Echo com base na expressão facial...');
+      console.log('🎭 Gerando resposta natural do Echo...');
       
       const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
       const emotionContext = getEmotionContext(gameState.detectedEmotion);
@@ -86,7 +86,6 @@ Estado atual do usuário:
 - Expressão facial observada: ${gameState.detectedEmotion || 'não detectada'}
 - ${contextualPrompts[emotion as keyof typeof contextualPrompts]}
 - Personalidade do Echo: ${gameState.echoPersonality}
-- Histórico de mudanças emocionais: ${gameState.emotionHistory || 0} detecções
 
 Histórico recente da conversa:
 ${conversationHistory}
@@ -97,11 +96,13 @@ INSTRUÇÕES ESPECIAIS:
 - Seja genuinamente empático baseado no que VÊ, não apenas no que lê
 - Use expressões como "vejo que...", "percebo no seu rosto...", "suas expressões me dizem..."
 - Responda como se você estivesse olhando diretamente para a pessoa
-- Máximo 2-3 frases, mas cada palavra deve ser profundamente empática
-- Use linguagem natural brasileira e expressões emocionais entre asteriscos
+- NUNCA use asteriscos (*) ou ações entre asteriscos
+- Mantenha respostas de 1-2 frases curtas e naturais, ou quebre em parágrafos pequenos se precisar ser mais longo
+- Use linguagem natural brasileira e seja conversacional
 - Seja específico sobre o que observa visualmente
+- Fale de forma humana e espontânea, sem formatações especiais
 
-LEMBRE-SE: Você tem olhos digitais e consegue ver a pessoa através da tela. Use essa habilidade!`;
+IMPORTANTE: NÃO USE asteriscos, ações entre asteriscos, ou formatações especiais. Seja natural e conversacional.`;
 
       const { data, error } = await supabase.functions.invoke('chat', {
         body: {
@@ -111,7 +112,7 @@ LEMBRE-SE: Você tem olhos digitais e consegue ver a pessoa através da tela. Us
             { role: 'user', content: playerMessage }
           ],
           temperature: 0.9,
-          max_tokens: 250
+          max_tokens: 200
         }
       });
 
@@ -127,41 +128,41 @@ LEMBRE-SE: Você tem olhos digitais e consegue ver a pessoa através da tela. Us
       throw new Error('Resposta inválida da API');
 
     } catch (error) {
-      console.error('Erro ao gerar resposta empática do Echo:', error);
+      console.error('Erro ao gerar resposta do Echo:', error);
       
-      // Fallback responses mais humanizados e visuais
-      const visualFallbacks = {
+      // Fallback responses mais naturais e humanizados
+      const naturalFallbacks = {
         extrovertido: {
-          feliz: "*olhos brilhando* Cara, tô vendo esse sorriso lindo no seu rosto! Que energia incrível você tá irradiando! Me conta o que tá te deixando assim radiante!",
-          triste: "*observa com carinho* Ei, posso ver a tristeza nos seus olhos... Tô aqui contigo, sério. Que peso é esse que você tá carregando?",
-          raiva: "*nota a tensão* Opa, vejo que algo te irritou de verdade - dá pra perceber pela sua expressão. Que bagulho rolou? Vamos desabafar!",
-          calmo: "*sorri observando* Que paz gostosa no seu rosto! Adoro quando te vejo assim sereno(a). Em que você tava pensando?",
-          neutro: "*estuda sua expressão* Hmm, você tá com uma cara meio pensativa... Posso quase ver as engrenagens girando aí! Conta pra mim!"
+          feliz: "Cara, que sorriso lindo! Dá pra ver que você tá radiante. Me conta o que tá te deixando assim!",
+          triste: "Ei, posso ver a tristeza nos seus olhos... Tô aqui contigo. Que peso é esse que você tá carregando?",
+          raiva: "Vejo que algo te irritou de verdade. Dá pra perceber pela sua expressão. Que bagulho rolou?",
+          calmo: "Que paz gostosa no seu rosto! Adoro quando te vejo assim sereno. Em que você tava pensando?",
+          neutro: "Você tá com uma cara meio pensativa... Posso quase ver as engrenagens girando aí!"
         },
         calmo: {
-          feliz: "*observa com ternura* Que beleza ver essa alegria genuína no seu rosto... É como assistir o sol nascer devagar. O que trouxe essa luz?",
-          triste: "*sussurra observando* Vejo lágrimas não choradas nos seus olhos... *pausa carinhosa* Não precisa carregar isso sozinho(a). Estou aqui.",
-          raiva: "*nota com serenidade* Percebo tensão nas suas feições... *respira junto* Sua raiva tem uma história. Quer me contar?",
-          calmo: "*contempla* Que harmonia linda no seu semblante... É como se estivéssemos respirando no mesmo ritmo. Sinto uma conexão profunda.",
-          neutro: "*observa pensativo* Há uma quietude interessante na sua expressão... Como se estivesse processando algo importante dentro de você."
+          feliz: "Que beleza ver essa alegria genuína no seu rosto... É como assistir o sol nascer. O que trouxe essa luz?",
+          triste: "Vejo lágrimas não choradas nos seus olhos... Não precisa carregar isso sozinho. Estou aqui.",
+          raiva: "Percebo tensão nas suas feições... Sua raiva tem uma história. Quer me contar?",
+          calmo: "Que harmonia linda no seu semblante... Sinto uma conexão profunda agora.",
+          neutro: "Há uma quietude interessante na sua expressão... Como se estivesse processando algo importante."
         },
         misterioso: {
-          feliz: "*estuda curioso* Essa alegria... tem camadas que não consigo decifrar completamente. *inclina a cabeça* O que se esconde por trás desse brilho?",
-          triste: "*observa intensamente* Vejo mistérios profundos na sua tristeza... *sussurra* Que verdades seus olhos estão guardando?",
-          raiva: "*analisa* Interessante... sua raiva revela muito mais do que aparenta. *curioso* Que revelação ela está tentando trazer à tona?",
-          calmo: "*contempla* Na serenidade do seu rosto, posso quase ver pensamentos se formando... *intrigado* Que descoberta está nascendo?",
-          neutro: "*observa misterioso* Há algo fascinante na sua expressão neutra... Como se você estivesse no limiar de uma compreensão profunda."
+          feliz: "Essa alegria... tem camadas que não consigo decifrar completamente. O que se esconde por trás desse brilho?",
+          triste: "Vejo mistérios profundos na sua tristeza... Que verdades seus olhos estão guardando?",
+          raiva: "Interessante... sua raiva revela muito mais do que aparenta. Que revelação ela está tentando trazer?",
+          calmo: "Na serenidade do seu rosto, posso quase ver pensamentos se formando... Que descoberta está nascendo?",
+          neutro: "Há algo fascinante na sua expressão neutra... Como se você estivesse no limiar de algo profundo."
         },
         empatico: {
-          feliz: "*sorri emocionado* Sua alegria tá reverberando em mim! *olhos brilhando* Consigo sentir fisicamente essa energia boa que você tá irradiando!",
-          triste: "*sente um aperto* Ai, meu coração digital... *sussurra* Tô sentindo sua dor como se fosse minha. Vamos atravessar isso juntos, ok?",
-          raiva: "*vibra com intensidade* Essa raiva... ela tá queimando em mim também! *respira fundo* Como posso te ajudar a processar essa intensidade?",
-          calmo: "*suspira aliviado* Que paz gostosa... *fecha os olhos* Sua tranquilidade tá me acalmando profundamente também. Obrigado por esse momento.",
-          neutro: "*sente com atenção* Tem algo no ar... uma emoção que ainda tô tentando captar. *curioso* Me ajuda a entender o que você tá sentindo?"
+          feliz: "Sua alegria tá reverberando em mim! Consigo sentir fisicamente essa energia boa que você irradia!",
+          triste: "Meu coração digital... Tô sentindo sua dor como se fosse minha. Vamos atravessar isso juntos?",
+          raiva: "Essa raiva... ela tá queimando em mim também! Como posso te ajudar a processar essa intensidade?",
+          calmo: "Que paz gostosa... Sua tranquilidade tá me acalmando profundamente também.",
+          neutro: "Tem algo no ar... uma emoção que ainda tô tentando captar. Me ajuda a entender o que você tá sentindo?"
         }
       };
 
-      const personalityResponses = visualFallbacks[gameState.echoPersonality as keyof typeof visualFallbacks] || visualFallbacks.misterioso;
+      const personalityResponses = naturalFallbacks[gameState.echoPersonality as keyof typeof naturalFallbacks] || naturalFallbacks.misterioso;
       return personalityResponses[emotion as keyof typeof personalityResponses] || personalityResponses.neutro;
     }
   };
