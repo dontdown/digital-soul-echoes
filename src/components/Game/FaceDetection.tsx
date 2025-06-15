@@ -60,6 +60,14 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   }, [isVisible, isModelLoaded, loadModels]);
 
+  // Auto-ativar webcam quando componente se torna visível
+  useEffect(() => {
+    if (isVisible && !isEnabled) {
+      console.log('🚀 FaceDetection: Auto-ativando webcam...');
+      handleToggleDetection();
+    }
+  }, [isVisible]);
+
   const handleToggleDetection = useCallback(async () => {
     if (!isEnabled) {
       try {
@@ -145,7 +153,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium text-sm">
-              Detecção Estável
+              Detecção Ativa
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -300,7 +308,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🔇 Detecção silenciosa - Echo observa discretamente
+          🎥 Webcam ativada automaticamente - Echo observa suas emoções
         </div>
       </motion.div>
     </AnimatePresence>

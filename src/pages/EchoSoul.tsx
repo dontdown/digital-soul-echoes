@@ -7,14 +7,16 @@ import GameChat from '@/components/Game/GameChat';
 import FaceDetection from '@/components/Game/FaceDetection';
 import { useEchoStore } from '@/store/echoStore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import LanguageSelector from '@/components/LanguageSelector';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, History, Menu, Camera, Info, Heart, Brain, Gamepad2 } from 'lucide-react';
+import { Eye, History, Menu, Camera, Info, Heart, Brain, Gamepad2, Home, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { DetectedEmotion } from '@/hooks/useEmotionDetection';
 
 const EchoSoul = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { playerData, echoPersonality, echoMood, updateEchoMood } = useEchoStore();
   const { t } = useLanguage();
   const [showChat, setShowChat] = useState(false);
@@ -144,6 +146,21 @@ const EchoSoul = () => {
     }
   }, [echoMood, updateEchoMood, lastDetectedEmotion]);
 
+  const handleWebcamActivation = useCallback(() => {
+    console.log('🎥 Ativando webcam automaticamente...');
+    setShowFaceDetection(true);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logout realizado com sucesso!');
+    } catch (error) {
+      console.error('Erro no logout:', error);
+      toast.error('Erro ao fazer logout');
+    }
+  };
+
   if (!gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -176,7 +193,7 @@ const EchoSoul = () => {
           <div className="flex items-center space-x-2">
             <LanguageSelector />
             <Button
-              onClick={() => setShowFaceDetection(!showFaceDetection)}
+              onClick={handleWebcamActivation}
               variant="ghost"
               size="sm"
               className={`${showFaceDetection ? 'text-cyan-400' : 'text-white'} hover:text-cyan-400`}
@@ -258,7 +275,7 @@ const EchoSoul = () => {
                 {t('instructions.webcamDesc')}
               </p>
               <Button
-                onClick={() => setShowFaceDetection(true)}
+                onClick={handleWebcamActivation}
                 variant="outline"
                 size="sm"
                 className="w-full text-xs bg-cyan-600/20 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600/30"
@@ -301,6 +318,15 @@ const EchoSoul = () => {
           className="absolute top-16 right-4 z-50 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-lg p-2 space-y-2"
         >
           <Button
+            onClick={() => navigate('/home')}
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-green-400 hover:text-green-300"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Dashboard
+          </Button>
+          <Button
             onClick={() => setShowInstructions(true)}
             variant="ghost"
             size="sm"
@@ -326,6 +352,16 @@ const EchoSoul = () => {
           >
             <History className="w-4 h-4 mr-2" />
             {t('home.timeline')}
+          </Button>
+          <div className="border-t border-slate-600 my-2"></div>
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-red-400 hover:text-red-300"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
           </Button>
         </motion.div>
       )}
