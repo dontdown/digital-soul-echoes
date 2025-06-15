@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js';
 
@@ -43,14 +44,32 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   const EMOTION_CHANGE_COOLDOWN = 3000; // 3 segundos
   const STABILITY_BONUS = 0.15;
 
+  // Fallback: simulação básica quando modelos não carregam
+  const [useFallback, setUseFallback] = useState(false);
+
   const loadModels = async () => {
     try {
-      console.log('🤖 Carregando modelos do face-api.js...');
+      console.log('🤖 Tentando carregar modelos reais do face-api.js...');
       setError(null);
+      setUseFallback(false);
       
-      // Carregar modelos do face-api.js
       const MODEL_URL = '/models';
       
+      // Verificar se os arquivos existem antes de tentar carregar
+      const checkModel = async (url: string) => {
+        try {
+          const response = await fetch(`${MODEL_URL}/${url}`);
+          if (!response.ok) {
+            throw new Error(`Modelo não encontrado: ${url}`);
+          }
+          return response;
+        } catch (err) {
+          console.warn(`⚠️ Modelo não disponível: ${url}`);
+          throw err;
+        }
+      };
+
+      // Tentar carregar modelos
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
         faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
@@ -58,11 +77,15 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
       ]);
 
       setIsModelLoaded(true);
-      console.log('✅ Modelos carregados com sucesso!');
+      console.log('✅ Modelos reais carregados com sucesso!');
+      
     } catch (err) {
-      console.error('❌ Erro ao carregar modelos:', err);
-      setError('Erro ao carregar modelos de IA. Usando detecção básica.');
-      setIsModelLoaded(true); // Permitir uso mesmo com erro
+      console.error('❌ Erro ao carregar modelos reais:', err);
+      console.log('🔄 Ativando modo fallback...');
+      
+      setUseFallback(true);
+      setIsModelLoaded(true);
+      setError('Usando detecção simulada. Para precisão real, baixe os modelos.');
     }
   };
 
@@ -89,6 +112,28 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     }
 
     return { emotion: bestEmotion, confidence: bestConfidence };
+  };
+
+  // Simulação básica para fallback
+  const simulateEmotionDetection = (): FaceDetectionResult => {
+    const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'triste', 'surpreso', 'cansado', 'raiva'];
+    const weights = [0.3, 0.25, 0.15, 0.1, 0.1, 0.1]; // Mais provável ser feliz ou neutro
+    
+    let random = Math.random();
+    let selectedEmotion: DetectedEmotion = 'neutro';
+    
+    for (let i = 0; i < emotions.length; i++) {
+      if (random < weights[i]) {
+        selectedEmotion = emotions[i];
+        break;
+      }
+      random -= weights[i];
+    }
+    
+    // Simular confiança variável
+    const confidence = 0.5 + Math.random() * 0.4; // Entre 50% e 90%
+    
+    return { emotion: selectedEmotion, confidence };
   };
 
   const smoothEmotionDetection = (newResult: FaceDetectionResult): FaceDetectionResult | null => {
@@ -140,7 +185,8 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     
     if (shouldChange) {
       lastEmotionChangeRef.current = now;
-      console.log(`🎭 Emoção detectada: ${mostFrequentEmotion} (${Math.round(finalConfidence * 100)}%)`);
+      const mode = useFallback ? 'SIMULADO' : 'REAL';
+      console.log(`🎭 Emoção detectada (${mode}): ${mostFrequentEmotion} (${Math.round(finalConfidence * 100)}%)`);
       return { emotion: mostFrequentEmotion, confidence: finalConfidence };
     }
     
@@ -151,7 +197,14 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     try {
       if (!isModelLoaded) return null;
 
-      // Usar face-api.js para detectar expressões
+      // Se usando fallback, simular detecção
+      if (useFallback) {
+        const rawResult = simulateEmotionDetection();
+        const smoothedResult = smoothEmotionDetection(rawResult);
+        return smoothedResult || { emotion: currentEmotion || 'neutro', confidence };
+      }
+
+      // Usar face-api.js real para detectar expressões
       const detections = await faceapi
         .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
         .withFaceExpressions();
@@ -171,6 +224,14 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
       return smoothedResult || { emotion: currentEmotion || 'neutro', confidence };
     } catch (err) {
       console.error('❌ Erro na detecção:', err);
+      
+      // Em caso de erro, usar fallback
+      if (!useFallback) {
+        console.log('🔄 Mudando para modo fallback devido a erro');
+        setUseFallback(true);
+        setError('Erro na IA real. Usando simulação.');
+      }
+      
       return null;
     }
   };
@@ -179,7 +240,8 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     if (!isModelLoaded || isDetecting) return;
 
     setIsDetecting(true);
-    console.log('🔄 Iniciando detecção com face-api.js...');
+    const mode = useFallback ? 'simulado' : 'real';
+    console.log(`🔄 Iniciando detecção ${mode}...`);
     
     // Limpar histórico anterior
     emotionHistoryRef.current = [];
