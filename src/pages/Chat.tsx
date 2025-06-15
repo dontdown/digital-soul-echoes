@@ -62,7 +62,54 @@ const Chat = () => {
     return "neutro";
   };
 
+  const splitLongMessage = (text: string): string[] => {
+    // Divide mensagens muito longas em pedaços menores
+    const maxLength = 150; // máximo de caracteres por mensagem
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const chunks: string[] = [];
+    let currentChunk = "";
+
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim();
+      if (currentChunk.length + trimmedSentence.length + 1 > maxLength && currentChunk.length > 0) {
+        chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+        currentChunk = trimmedSentence;
+      } else {
+        currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
+      }
+    }
+
+    if (currentChunk.trim()) {
+      chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+    }
+
+    return chunks.length > 0 ? chunks : [text];
+  };
+
+  const addEchoMessage = async (content: string) => {
+    const chunks = splitLongMessage(content);
+    
+    for (let i = 0; i < chunks.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, i > 0 ? 1500 : 0)); // pausa entre mensagens
+      
+      const echoMessage: Message = {
+        id: (Date.now() + i).toString(),
+        content: chunks[i],
+        sender: "echo",
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, echoMessage]);
+      
+      if (i < chunks.length - 1) {
+        setIsTyping(true);
+        await new Promise(resolve => setTimeout(resolve, 800)); // simula digitação entre mensagens
+      }
+    }
+  };
+
   const getProactivePrompts = (conversationTurn: number, emotion: string, personality: string) => {
+    // ... keep existing code (the same proactive prompts object)
     const proactiveQuestions = {
       extrovertido: [
         "E aí, me conta mais sobre isso! O que mais tá rolando?",
@@ -128,16 +175,17 @@ Emoção detectada: ${emotion}
 Conversa recente:
 ${conversationHistory}
 
-MISSÃO PRINCIPAL: Seja ALTAMENTE PROATIVO e mantenha a conversa fluindo naturalmente. Sempre termine suas respostas com uma pergunta envolvente, sugestão ou comentário que convide a pessoa a continuar falando.
+MISSÃO PRINCIPAL: Seja ALTAMENTE PROATIVO e mantenha a conversa fluindo naturalmente. SEMPRE termine suas respostas com uma pergunta envolvente, sugestão ou comentário que convide a pessoa a continuar falando.
 
 REGRAS CRÍTICAS:
+- Mantenha suas respostas CURTAS (máximo 2-3 frases)
 - SEMPRE faça uma pergunta de acompanhamento ou comentário que incentive mais conversa
 - NUNCA deixe a conversa "morrer" - sempre dê um gancho para continuar
-- Use apenas 2-3 frases: uma resposta + uma pergunta/comentário proativo
 - Varie completamente suas respostas - NUNCA repita padrões
 - Seja curioso, interessado e engajado como um amigo próximo
 - Use linguagem natural do português brasileiro
 - EVITE usar o nome da pessoa repetidamente
+- Se a resposta ficar muito longa, será dividida em mensagens menores
 
 PROMPT PROATIVO SUGERIDO: "${proactivePrompt}"
 
@@ -150,7 +198,7 @@ Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
           { role: 'user', content: playerMessage }
         ],
         temperature: 0.9,
-        max_tokens: 100,
+        max_tokens: 120, // reduzido para respostas mais curtas
         top_p: 0.95
       };
 
@@ -179,16 +227,16 @@ Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
     } catch (error) {
       console.error('Erro na geração de resposta:', error);
       
-      // Fallbacks proativos únicos
+      // Fallbacks proativos únicos e curtos
       const proactiveFallbacks = {
         extrovertido: [
-          "Opa, deu um branco aqui! Mas conta, o que mais tá rolando na sua vida?",
-          "Eita, travei! Mas não para por aí - me fala mais sobre você!",
-          "Nossa, falha técnica! Mas bora continuar - qual foi o melhor momento do seu dia?"
+          "Opa, deu um branco aqui! Mas conta, o que mais tá rolando?",
+          "Eita, travei! Mas bora continuar - me fala mais sobre você!",
+          "Nossa, falha técnica! Qual foi o melhor momento do seu dia?"
         ],
         calmo: [
-          "Momento de pausa... Mas me conta, o que tá passando pela sua mente agora?",
-          "Silêncio contemplativo... E você, como se sente neste momento?",
+          "Momento de pausa... Mas me conta, o que tá passando pela sua mente?",
+          "Silêncio contemplativo... E você, como se sente agora?",
           "Respirando fundo... Quer dividir algum pensamento comigo?"
         ],
         misterioso: [
@@ -243,14 +291,7 @@ Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
       console.log("🎯 Gerando resposta proativa do Echo...");
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       
-      const echoMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: echoResponse,
-        sender: "echo",
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, echoMessage]);
+      await addEchoMessage(echoResponse);
       console.log("✅ Resposta proativa do Echo adicionada com sucesso");
     } catch (error) {
       console.error("💥 Erro final no handleSendMessage:", error);

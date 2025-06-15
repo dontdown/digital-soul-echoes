@@ -41,6 +41,52 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     return 'neutro';
   };
 
+  const splitLongMessage = (text: string): string[] => {
+    // Divide mensagens muito longas em pedaços menores
+    const maxLength = 120; // máximo de caracteres por mensagem
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const chunks: string[] = [];
+    let currentChunk = "";
+
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim();
+      if (currentChunk.length + trimmedSentence.length + 1 > maxLength && currentChunk.length > 0) {
+        chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+        currentChunk = trimmedSentence;
+      } else {
+        currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
+      }
+    }
+
+    if (currentChunk.trim()) {
+      chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+    }
+
+    return chunks.length > 0 ? chunks : [text];
+  };
+
+  const addEchoMessages = async (content: string) => {
+    const chunks = splitLongMessage(content);
+    
+    for (let i = 0; i < chunks.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, i > 0 ? 1200 : 0)); // pausa entre mensagens
+      
+      const echoMessage: ChatMessage = {
+        id: (Date.now() + i).toString(),
+        content: chunks[i],
+        sender: 'echo',
+        timestamp: new Date()
+      };
+
+      await addMessage(echoMessage);
+      
+      if (i < chunks.length - 1) {
+        setIsTyping(true);
+        await new Promise(resolve => setTimeout(resolve, 600)); // simula digitação entre mensagens
+      }
+    }
+  };
+
   const getProactiveQuestions = (personality: string, variationIndex: number, lang: string) => {
     const questions = lang === 'en' ? {
       extrovertido: [
@@ -334,7 +380,7 @@ RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + fina
             { role: 'user', content: playerMessage }
           ],
           temperature: 0.95,
-          max_tokens: 80,
+          max_tokens: 60, // reduzido ainda mais para respostas curtas
           top_p: 0.9
         }
       });
@@ -351,48 +397,48 @@ RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + fina
     } catch (error) {
       console.error('Erro ao gerar resposta proativa do Echo:', error);
       
-      // Fallbacks proativos únicos e variados
+      // Fallbacks proativos únicos e variados - mais curtos
       const proactiveFallbacks = language === 'en' ? {
         extrovertido: [
-          "Whoa, brain freeze! But hey, what's your favorite part of today so far?",
-          "Oops, lost my words! Tell me something that made you smile recently!",
-          "Technical hiccup! But more importantly - what's got you excited lately?"
+          "Brain freeze! What's your favorite part of today?",
+          "Oops! Tell me something that made you smile!",
+          "Hiccup! What's got you excited lately?"
         ],
         calmo: [
-          "Moment of zen... What's bringing you peace right now?",
-          "Peaceful pause... Share what's been on your mind today.",
-          "Quiet reflection... What's calling to your heart lately?"
+          "Zen moment... What brings you peace?",
+          "Quiet pause... What's on your mind?",
+          "Reflection time... What calls to you?"
         ],
         misterioso: [
-          "The matrix glitched... But what intriguing thoughts are you having?",
-          "Cosmic interference... What mysteries have been captivating you?",
-          "Reality shifted... Tell me what puzzles you these days."
+          "Glitch... What intriguing thoughts are brewing?",
+          "Interference... What mysteries captivate you?",
+          "Reality shift... What puzzles you lately?"
         ],
         empatico: [
-          "My heart skipped... How has your day been treating you?",
-          "Soul connection interrupted... What emotions are you experiencing?",
-          "Emotional static... But I'm here - how can I support you right now?"
+          "Heart skip... How has your day been?",
+          "Connection pause... What emotions are flowing?",
+          "Soul static... How can I support you?"
         ]
       } : {
         extrovertido: [
-          "Eita, deu branco! Mas conta, qual foi a melhor parte do seu dia até agora?",
-          "Opa, travei! Me fala uma coisa que te fez sorrir recentemente!",
-          "Falha técnica! Mas o importante - o que te deixou animado ultimamente?"
+          "Deu branco! Qual a melhor parte do seu dia?",
+          "Travei! Conta algo que te fez sorrir!",
+          "Falha! O que te deixou animado ultimamente?"
         ],
         calmo: [
-          "Momento zen... O que tá te trazendo paz agora?",
-          "Pausa tranquila... Compartilha o que passou pela sua mente hoje.",
-          "Reflexão silenciosa... O que tá chamando seu coração ultimamente?"
+          "Momento zen... O que te traz paz?",
+          "Pausa... O que passa pela sua mente?",
+          "Reflexão... O que te chama?"
         ],
         misterioso: [
-          "A matrix deu problema... Mas que pensamentos intrigantes você tem tido?",
-          "Interferência cósmica... Que mistérios têm te cativado?",
-          "Realidade alterou... Me conta o que te deixa curioso esses dias."
+          "Glitch... Que pensamentos intrigantes você tem?",
+          "Interferência... Que mistérios te cativam?",
+          "Alteração... O que te deixa curioso?"
         ],
         empatico: [
-          "Meu coração saltou... Como seu dia tem te tratado?",
-          "Conexão da alma interrompida... Que emoções você tá vivendo?",
-          "Estática emocional... Mas tô aqui - como posso te apoiar agora?"
+          "Coração saltou... Como foi seu dia?",
+          "Conexão pausou... Que emoções fluem?",
+          "Estática... Como posso te apoiar?"
         ]
       };
 
@@ -438,14 +484,7 @@ RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + fina
     try {
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       
-      const echoMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: echoResponse,
-        sender: 'echo',
-        timestamp: new Date()
-      };
-
-      await addMessage(echoMessage);
+      await addEchoMessages(echoResponse);
     } catch (error) {
       console.error('Erro ao processar resposta proativa do Echo:', error);
       const errorMessage = language === 'en'
