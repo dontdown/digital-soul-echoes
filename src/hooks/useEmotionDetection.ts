@@ -1,9 +1,8 @@
 
 import { useState, useCallback } from 'react';
-import { useFaceDetection, DetectedEmotion } from './useFaceDetection';
-import { useHuggingFaceEmotion } from './useHuggingFaceEmotion';
 
-export type EmotionModel = 'face-api' | 'huggingface';
+export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
+export type EmotionModel = 'mediapipe' | 'opencv' | 'tensorflow' | 'simulated';
 
 interface UseEmotionDetectionReturn {
   currentModel: EmotionModel;
@@ -13,71 +12,86 @@ interface UseEmotionDetectionReturn {
   isDetecting: boolean;
   error: string | null;
   isSimulated: boolean;
-  isDownloading: boolean;
-  downloadProgress: number;
-  needsDownload: boolean;
   switchModel: (model: EmotionModel) => void;
   loadModels: () => Promise<void>;
   startDetection: (videoElement: HTMLVideoElement) => void;
   stopDetection: () => void;
-  downloadModels: () => Promise<void>;
 }
 
 export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion) => void): UseEmotionDetectionReturn => {
-  const [currentModel, setCurrentModel] = useState<EmotionModel>('face-api');
-  
-  const faceApiHook = useFaceDetection(onEmotionChange);
-  const huggingFaceHook = useHuggingFaceEmotion(onEmotionChange);
-  
-  const getCurrentHook = useCallback(() => {
-    return currentModel === 'face-api' ? faceApiHook : huggingFaceHook;
-  }, [currentModel, faceApiHook, huggingFaceHook]);
+  const [currentModel, setCurrentModel] = useState<EmotionModel>('simulated');
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState<DetectedEmotion | null>(null);
+  const [confidence, setConfidence] = useState(0);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const switchModel = useCallback((model: EmotionModel) => {
-    getCurrentHook().stopDetection();
     setCurrentModel(model);
+    setIsModelLoaded(false);
+    setError(null);
     console.log(`🔄 Alternando para modelo: ${model}`);
-  }, [getCurrentHook]);
+  }, []);
   
   const loadModels = useCallback(async () => {
-    if (currentModel === 'face-api') {
-      await faceApiHook.loadModels();
-    } else {
-      await huggingFaceHook.loadModel();
-    }
-  }, [currentModel, faceApiHook, huggingFaceHook]);
-  
-  const downloadModels = useCallback(async () => {
-    if (currentModel === 'face-api') {
-      await faceApiHook.downloadModels();
-    }
-  }, [currentModel, faceApiHook]);
+    setError(null);
+    setIsModelLoaded(false);
+    
+    // Por enquanto, apenas modo simulado até implementarmos um modelo
+    console.log(`📦 Carregando modelo: ${currentModel}`);
+    setIsModelLoaded(true);
+    setError('Modo simulado ativo - escolha um modelo para implementar');
+  }, [currentModel]);
   
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
-    getCurrentHook().startDetection(videoElement);
-  }, [getCurrentHook]);
+    if (!isModelLoaded) return;
+    
+    setIsDetecting(true);
+    console.log('🔄 Iniciando detecção simulada...');
+    
+    // Simulação básica por enquanto
+    const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso'];
+    let currentIndex = 0;
+    
+    const interval = setInterval(() => {
+      const emotion = emotions[currentIndex % emotions.length];
+      setCurrentEmotion(emotion);
+      setConfidence(0.8);
+      
+      if (onEmotionChange) {
+        onEmotionChange(emotion);
+      }
+      
+      currentIndex++;
+    }, 3000);
+    
+    // Store interval for cleanup
+    (window as any).emotionInterval = interval;
+  }, [isModelLoaded, onEmotionChange]);
   
   const stopDetection = useCallback(() => {
-    getCurrentHook().stopDetection();
-  }, [getCurrentHook]);
-  
-  const hook = getCurrentHook();
+    setIsDetecting(false);
+    setCurrentEmotion(null);
+    
+    if ((window as any).emotionInterval) {
+      clearInterval((window as any).emotionInterval);
+      delete (window as any).emotionInterval;
+    }
+    
+    console.log('⏹️ Detecção parada');
+  }, []);
   
   return {
     currentModel,
-    isModelLoaded: hook.isModelLoaded,
-    currentEmotion: hook.currentEmotion,
-    confidence: hook.confidence,
-    isDetecting: hook.isDetecting,
-    error: hook.error,
-    isSimulated: currentModel === 'face-api' ? faceApiHook.isSimulated : false,
-    isDownloading: currentModel === 'face-api' ? faceApiHook.isDownloading : false,
-    downloadProgress: currentModel === 'face-api' ? faceApiHook.downloadProgress : 0,
-    needsDownload: currentModel === 'face-api' ? faceApiHook.needsDownload : false,
+    isModelLoaded,
+    currentEmotion,
+    confidence,
+    isDetecting,
+    error,
+    isSimulated: true, // Por enquanto sempre simulado
     switchModel,
     loadModels,
     startDetection,
-    stopDetection,
-    downloadModels
+    stopDetection
   };
 };

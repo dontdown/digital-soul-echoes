@@ -1,12 +1,10 @@
 
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
-import { useEmotionDetection, EmotionModel } from '@/hooks/useEmotionDetection';
-import { DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Play, Download, RotateCcw } from 'lucide-react';
+import { useEmotionDetection, EmotionModel, DetectedEmotion } from '@/hooks/useEmotionDetection';
+import { Camera, CameraOff, Eye, AlertCircle, Zap, Play, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -24,26 +22,20 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     isDetecting, 
     error: detectionError,
     isSimulated,
-    isDownloading,
-    downloadProgress,
-    needsDownload,
     switchModel,
     loadModels, 
     startDetection, 
-    stopDetection,
-    downloadModels
+    stopDetection
   } = useEmotionDetection(onEmotionDetected);
   
   const [isEnabled, setIsEnabled] = useState(false);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
 
   useEffect(() => {
-    if (isVisible && !hasLoadedOnce) {
-      console.log('🎭 Carregando modelos de detecção de emoção...');
+    if (isVisible) {
       loadModels();
-      setHasLoadedOnce(true);
     }
-  }, [isVisible, loadModels, hasLoadedOnce]);
+  }, [isVisible, loadModels]);
 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
@@ -66,23 +58,32 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   };
 
-  const handleSwitchModel = () => {
-    const newModel: EmotionModel = currentModel === 'face-api' ? 'huggingface' : 'face-api';
-    switchModel(newModel);
-    
-    if (isEnabled) {
-      toast.info(`Alternando para ${newModel === 'face-api' ? 'Face-API.js' : 'Hugging Face'}`);
-      setTimeout(() => {
-        loadModels();
-      }, 100);
+  const availableModels: { id: EmotionModel; name: string; description: string; status: string }[] = [
+    {
+      id: 'mediapipe',
+      name: 'MediaPipe',
+      description: 'Google MediaPipe - Rápido e preciso',
+      status: '🔧 Implementar'
+    },
+    {
+      id: 'tensorflow',
+      name: 'TensorFlow.js',
+      description: 'TensorFlow.js com modelos customizados',
+      status: '🔧 Implementar'
+    },
+    {
+      id: 'opencv',
+      name: 'OpenCV.js',
+      description: 'OpenCV.js para visão computacional',
+      status: '🔧 Implementar'
+    },
+    {
+      id: 'simulated',
+      name: 'Simulado',
+      description: 'Modo demo com emoções simuladas',
+      status: '✅ Ativo'
     }
-  };
-
-  const handleDownloadModels = async () => {
-    toast.info('Baixando modelos Face-API.js...');
-    await downloadModels();
-    toast.success('Download concluído! Testando modelos...');
-  };
+  ];
 
   // Auto-iniciar detecção quando câmera estiver ativa
   useEffect(() => {
@@ -134,23 +135,19 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium">
-              {currentModel === 'face-api' ? (isSimulated ? 'Face-API (Demo)' : 'Face-API.js') : 'Hugging Face'}
+              Detecção de Emoção
             </span>
-            {currentModel === 'face-api' && isSimulated ? (
-              <Play className="w-3 h-3 text-orange-400" />
-            ) : (
-              <Zap className="w-3 h-3 text-yellow-400" />
-            )}
+            <Play className="w-3 h-3 text-orange-400" />
           </div>
           <div className="flex items-center space-x-1">
             <Button
-              onClick={handleSwitchModel}
+              onClick={() => setShowModelSelector(!showModelSelector)}
               variant="ghost"
               size="sm"
               className="text-purple-400 hover:text-purple-300"
-              title="Alternar modelo de IA"
+              title="Escolher modelo de IA"
             >
-              <RotateCcw className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
             </Button>
             <Button
               onClick={handleToggleDetection}
@@ -163,81 +160,54 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           </div>
         </div>
 
+        {/* Seletor de Modelos */}
+        {showModelSelector && (
+          <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
+            <div className="text-cyan-400 text-sm font-medium mb-2">
+              📋 Modelos Disponíveis:
+            </div>
+            {availableModels.map((model) => (
+              <div
+                key={model.id}
+                className={`p-2 rounded cursor-pointer transition-colors ${
+                  currentModel === model.id 
+                    ? 'bg-purple-600/30 border border-purple-500/50' 
+                    : 'bg-slate-600/30 hover:bg-slate-600/50'
+                }`}
+                onClick={() => {
+                  switchModel(model.id);
+                  setShowModelSelector(false);
+                  toast.info(`Modelo alterado para: ${model.name}`);
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-white text-sm font-medium">{model.name}</span>
+                  <span className="text-xs">{model.status}</span>
+                </div>
+                <div className="text-gray-300 text-xs mt-1">{model.description}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Status */}
         <div className="space-y-2">
-          {/* Download de modelos necessário */}
-          {needsDownload && currentModel === 'face-api' && (
-            <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-blue-400 text-sm font-medium">
-                  📦 Modelos precisam ser baixados
-                </div>
-                <Button
-                  onClick={handleDownloadModels}
-                  disabled={isDownloading}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Download className="w-3 h-3 mr-1" />
-                  {isDownloading ? 'Baixando...' : 'Baixar'}
-                </Button>
-              </div>
-              {isDownloading && (
-                <div className="w-full bg-blue-900/30 rounded-full h-2">
-                  <div 
-                    className="bg-blue-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${downloadProgress}%` }}
-                  />
-                </div>
-              )}
-              <div className="text-blue-300 text-xs mt-1">
-                Download necessário apenas na primeira vez (~2MB)
-              </div>
-            </div>
-          )}
-
           {/* Status do modelo */}
-          <div className="flex items-center space-x-2 text-sm">
-            {isModelLoaded ? (
-              <>
-                <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">
-                  {currentModel === 'face-api' 
-                    ? (isSimulated ? 'Face-API modo simulado' : 'Face-API real carregado')
-                    : 'Hugging Face carregado'
-                  }
-                </span>
-              </>
-            ) : (
-              <>
-                <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                <span className="text-yellow-400">
-                  Carregando {currentModel === 'face-api' ? 'Face-API' : 'Hugging Face'}...
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Aviso sobre modo simulado */}
-          {currentModel === 'face-api' && isSimulated && isModelLoaded && (
-            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
-              <div className="text-orange-400 text-xs">
-                🎭 Modo Demo: Face-API com emoções simuladas
-              </div>
-              {detectionError && (
-                <div className="text-orange-300 text-xs mt-1">
-                  Motivo: {detectionError}
-                </div>
-              )}
+          <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-3">
+            <div className="text-orange-400 text-sm font-medium">
+              🎭 Modo Simulado Ativo
             </div>
-          )}
+            <div className="text-orange-300 text-xs mt-1">
+              Escolha um modelo acima para implementar detecção real de emoções
+            </div>
+          </div>
 
           {/* Status da câmera */}
           {isEnabled && (
             <div className="flex items-center space-x-2 text-sm">
               {isActive ? (
                 <>
-                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                   <span className="text-green-400">Câmera funcionando</span>
                 </>
               ) : (
@@ -264,9 +234,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {isEnabled && isActive && currentEmotion && (
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">
-                  {isSimulated ? 'Emoção Demo:' : 'Emoção AI:'}
-                </span>
+                <span className="text-gray-300 text-sm">Emoção Demo:</span>
                 <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
               </div>
               <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
@@ -291,13 +259,11 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               style={{ transform: 'scaleX(-1)' }}
             />
             
-            {/* Indicador REC */}
+            {/* Indicador DEMO */}
             {isDetecting && (
               <div className="absolute top-2 right-2 flex items-center space-x-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-white text-xs bg-black/50 px-1 rounded">
-                  {isSimulated ? 'DEMO' : 'REC'}
-                </span>
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="text-white text-xs bg-black/50 px-1 rounded">DEMO</span>
               </div>
             )}
             
@@ -314,23 +280,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          {currentModel === 'face-api' ? (
-            isSimulated ? (
-              <>
-                🎭 Demo Mode - Simulated Emotions
-                <br />
-                <span className="text-orange-400">Models may be corrupted. Try downloading fresh models!</span>
-              </>
-            ) : (
-              '🚀 Powered by Face-API.js - Real AI!'
-            )
-          ) : (
-            <>
-              🤗 Powered by Hugging Face Transformers
-              <br />
-              <span className="text-green-400">Modern ML emotion detection</span>
-            </>
-          )}
+          🔧 Clique em ⚙️ para escolher um modelo de IA para implementar
         </div>
       </motion.div>
     </AnimatePresence>
