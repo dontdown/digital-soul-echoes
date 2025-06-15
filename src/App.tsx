@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Landing from "./pages/Landing";
 import EchoSoulHome from "./pages/EchoSoulHome";
 import CreateEcho from "./pages/CreateEcho";
 import EchoSoul from "./pages/EchoSoul";
@@ -24,8 +25,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
+            <Route path="/home" element={
               <ProtectedRoute>
                 <EchoSoulHome />
               </ProtectedRoute>
