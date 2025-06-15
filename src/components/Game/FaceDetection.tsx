@@ -100,7 +100,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium">Detecção Facial</span>
-            <Zap className="w-3 h-3 text-yellow-400" title="Modo Simplificado" />
+            <Zap className="w-3 h-3 text-yellow-400" />
           </div>
           <Button
             onClick={handleToggleDetection}
