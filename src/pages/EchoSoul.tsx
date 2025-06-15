@@ -9,7 +9,7 @@ import { useEchoStore } from '@/store/echoStore';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, History, Menu, Camera } from 'lucide-react';
 import { toast } from 'sonner';
-import { DetectedEmotion } from '@/hooks/useFaceDetection';
+import { DetectedEmotion } from '@/hooks/useEmotionDetection';
 
 const EchoSoul = () => {
   const navigate = useNavigate();
