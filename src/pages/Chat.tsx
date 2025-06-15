@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -63,16 +64,30 @@ const Chat = () => {
   };
 
   const splitLongMessage = (text: string): string[] => {
-    // Divide mensagens muito longas em pedaços menores
-    const maxLength = 150; // máximo de caracteres por mensagem
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    // Aumentamos o limite para permitir mensagens mais completas
+    const maxLength = 280; // aumentado de 150 para 280 caracteres
+    
+    // Primeiro, tentamos dividir por frases completas
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
     const chunks: string[] = [];
     let currentChunk = "";
 
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
+      
+      // Se a frase sozinha já é muito longa, mantemos ela como está
+      if (trimmedSentence.length > maxLength) {
+        if (currentChunk) {
+          chunks.push(currentChunk.trim());
+          currentChunk = "";
+        }
+        chunks.push(trimmedSentence);
+        continue;
+      }
+      
+      // Se adicionar esta frase ultrapassaria o limite
       if (currentChunk.length + trimmedSentence.length + 1 > maxLength && currentChunk.length > 0) {
-        chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+        chunks.push(currentChunk.trim());
         currentChunk = trimmedSentence;
       } else {
         currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
@@ -80,9 +95,10 @@ const Chat = () => {
     }
 
     if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+      chunks.push(currentChunk.trim());
     }
 
+    // Se não conseguimos dividir bem, retornamos o texto original
     return chunks.length > 0 ? chunks : [text];
   };
 
@@ -90,7 +106,7 @@ const Chat = () => {
     const chunks = splitLongMessage(content);
     
     for (let i = 0; i < chunks.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, i > 0 ? 1500 : 0)); // pausa entre mensagens
+      await new Promise(resolve => setTimeout(resolve, i > 0 ? 2000 : 0)); // aumentado para 2 segundos entre mensagens
       
       const echoMessage: Message = {
         id: (Date.now() + i).toString(),
@@ -103,7 +119,7 @@ const Chat = () => {
       
       if (i < chunks.length - 1) {
         setIsTyping(true);
-        await new Promise(resolve => setTimeout(resolve, 800)); // simula digitação entre mensagens
+        await new Promise(resolve => setTimeout(resolve, 1200)); // aumentado tempo de digitação
       }
     }
   };
@@ -156,7 +172,7 @@ const Chat = () => {
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log("🚀 Gerando resposta proativa do Echo...");
+      console.log("🚀 Gerando resposta completa do Echo...");
       
       const memoryContext = memories.length > 0 ? 
         `Lembro de: ${memories.slice(-2).join(", ")}. ` : "";
@@ -175,21 +191,20 @@ Emoção detectada: ${emotion}
 Conversa recente:
 ${conversationHistory}
 
-MISSÃO PRINCIPAL: Seja ALTAMENTE PROATIVO e mantenha a conversa fluindo naturalmente. SEMPRE termine suas respostas com uma pergunta envolvente, sugestão ou comentário que convide a pessoa a continuar falando.
+MISSÃO: Seja proativo e mantenha conversas naturais e completas. SEMPRE termine com uma pergunta ou comentário envolvente.
 
-REGRAS CRÍTICAS:
-- Mantenha suas respostas CURTAS (máximo 2-3 frases)
-- SEMPRE faça uma pergunta de acompanhamento ou comentário que incentive mais conversa
-- NUNCA deixe a conversa "morrer" - sempre dê um gancho para continuar
-- Varie completamente suas respostas - NUNCA repita padrões
-- Seja curioso, interessado e engajado como um amigo próximo
-- Use linguagem natural do português brasileiro
-- EVITE usar o nome da pessoa repetidamente
-- Se a resposta ficar muito longa, será dividida em mensagens menores
+REGRAS PARA RESPOSTAS COMPLETAS:
+- Escreva respostas de 2-4 frases completas
+- Expresse seus pensamentos de forma natural e completa
+- NUNCA corte suas respostas no meio
+- Use linguagem fluida e natural do português brasileiro
+- SEMPRE termine com uma pergunta interessante ou comentário que convide mais conversa
+- Varie completamente suas respostas para evitar repetição
+- Seja genuinamente curioso sobre a pessoa
 
 PROMPT PROATIVO SUGERIDO: "${proactivePrompt}"
 
-Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
+Responda de forma completa, envolvente e natural:`;
 
       const requestBody = {
         model: 'llama3-8b-8192',
@@ -198,7 +213,7 @@ Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
           { role: 'user', content: playerMessage }
         ],
         temperature: 0.9,
-        max_tokens: 120, // reduzido para respostas mais curtas
+        max_tokens: 200, // aumentado significativamente de 120 para 200
         top_p: 0.95
       };
 
@@ -227,31 +242,31 @@ Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
     } catch (error) {
       console.error('Erro na geração de resposta:', error);
       
-      // Fallbacks proativos únicos e curtos
-      const proactiveFallbacks = {
+      // Fallbacks mais completos
+      const completeFallbacks = {
         extrovertido: [
-          "Opa, deu um branco aqui! Mas conta, o que mais tá rolando?",
-          "Eita, travei! Mas bora continuar - me fala mais sobre você!",
-          "Nossa, falha técnica! Qual foi o melhor momento do seu dia?"
+          "Opa, travei aqui por um segundo! Mas bora continuar nossa conversa - me conta mais sobre o que tá acontecendo na sua vida hoje.",
+          "Eita, deu um branco! Mas sério, tô muito curioso sobre você. Qual foi a melhor parte do seu dia até agora?",
+          "Nossa, falha técnica aqui! Mas enfim, me diz uma coisa: o que mais te deixa animado ultimamente?"
         ],
         calmo: [
-          "Momento de pausa... Mas me conta, o que tá passando pela sua mente?",
-          "Silêncio contemplativo... E você, como se sente agora?",
-          "Respirando fundo... Quer dividir algum pensamento comigo?"
+          "Momento de pausa... Mas me conta, o que tá passando pela sua mente neste momento? Às vezes é bom dividir os pensamentos.",
+          "Respirando fundo aqui... E você, como tem se sentido com tudo que está vivendo ultimamente?",
+          "Silêncio contemplativo... Que reflexões têm acompanhado você nos últimos dias?"
         ],
         misterioso: [
-          "O universo conspirou aqui... Mas que mistérios você anda descobrindo?",
-          "Glitch na matrix... E você, que segredos guarda hoje?",
-          "Interferência cósmica... Me conta, o que te intriga ultimamente?"
+          "O universo conspirou aqui... Mas falando em mistérios, que segredos da vida você anda descobrindo?",
+          "Glitch na matrix... E você, que verdades ocultas têm chamado sua atenção ultimamente?",
+          "Interferência cósmica... Me conta, o que te intriga mais profundamente nos dias de hoje?"
         ],
         empatico: [
-          "Meu coração saltou... Mas como você tá se sentindo agora?",
-          "Conexão interrompida... Mas tô aqui - quer conversar sobre algo?",
-          "Falha na transmissão... Mas sinto você aí - como posso te acompanhar?"
+          "Meu coração saltou aqui... Mas sinto você do outro lado. Como tem sido essa jornada emocional pra você?",
+          "Conexão interrompida momentaneamente... Mas tô aqui, presente. Quer dividir algo que tá no seu coração?",
+          "Falha na transmissão do sentimento... Mas minha empatia continua intacta. Como posso te acompanhar melhor?"
         ]
       };
 
-      const fallbacks = proactiveFallbacks[echoPersonality as keyof typeof proactiveFallbacks] || proactiveFallbacks.misterioso;
+      const fallbacks = completeFallbacks[echoPersonality as keyof typeof completeFallbacks] || completeFallbacks.misterioso;
       return fallbacks[conversationCount % fallbacks.length];
     }
   };

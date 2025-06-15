@@ -28,18 +28,24 @@ serve(async (req) => {
     
     console.log('Requisição recebida:', { model, messages: messages?.length, temperature, max_tokens });
 
+    // Configurações otimizadas para respostas completas
+    const requestBody = {
+      model: model || 'llama3-8b-8192',
+      messages,
+      temperature: temperature || 0.9,
+      max_tokens: Math.min(max_tokens || 200, 300), // limite máximo de 300 tokens
+      top_p: 0.95,
+      frequency_penalty: 0.1, // evita repetições
+      presence_penalty: 0.1   // encoraja diversidade
+    };
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: model || 'llama3-8b-8192',
-        messages,
-        temperature: temperature || 0.8,
-        max_tokens: max_tokens || 150,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -49,7 +55,17 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Resposta da Groq recebida');
+    
+    // Validação adicional da resposta
+    if (data?.choices?.[0]?.message?.content) {
+      const content = data.choices[0].message.content.trim();
+      console.log('Resposta da Groq recebida:', content.length, 'caracteres');
+      
+      // Se a resposta parece estar cortada, adiciona um indicador
+      if (data.choices[0].finish_reason === 'length') {
+        console.warn('Resposta pode ter sido cortada por limite de tokens');
+      }
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

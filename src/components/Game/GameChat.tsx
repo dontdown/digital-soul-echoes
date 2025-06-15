@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,16 +43,29 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
   };
 
   const splitLongMessage = (text: string): string[] => {
-    // Divide mensagens muito longas em pedaços menores
-    const maxLength = 120; // máximo de caracteres por mensagem
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    // Aumentamos significativamente o limite para mensagens mais completas
+    const maxLength = 250; // aumentado de 120 para 250 caracteres
+    
+    // Dividir por frases completas primeiro
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
     const chunks: string[] = [];
     let currentChunk = "";
 
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
+      
+      // Se a frase é muito longa, mantemos ela inteira
+      if (trimmedSentence.length > maxLength) {
+        if (currentChunk) {
+          chunks.push(currentChunk.trim());
+          currentChunk = "";
+        }
+        chunks.push(trimmedSentence);
+        continue;
+      }
+      
       if (currentChunk.length + trimmedSentence.length + 1 > maxLength && currentChunk.length > 0) {
-        chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+        chunks.push(currentChunk.trim());
         currentChunk = trimmedSentence;
       } else {
         currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
@@ -59,7 +73,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     }
 
     if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim() + (currentChunk.endsWith('.') || currentChunk.endsWith('!') || currentChunk.endsWith('?') ? '' : '.'));
+      chunks.push(currentChunk.trim());
     }
 
     return chunks.length > 0 ? chunks : [text];
@@ -69,7 +83,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     const chunks = splitLongMessage(content);
     
     for (let i = 0; i < chunks.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, i > 0 ? 1200 : 0)); // pausa entre mensagens
+      await new Promise(resolve => setTimeout(resolve, i > 0 ? 1800 : 0)); // aumentado para 1.8s entre mensagens
       
       const echoMessage: ChatMessage = {
         id: (Date.now() + i).toString(),
@@ -82,7 +96,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
       
       if (i < chunks.length - 1) {
         setIsTyping(true);
-        await new Promise(resolve => setTimeout(resolve, 600)); // simula digitação entre mensagens
+        await new Promise(resolve => setTimeout(resolve, 800)); // mantido tempo de digitação
       }
     }
   };
@@ -311,7 +325,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log('🎭 Gerando resposta proativa do Echo...');
+      console.log('🎭 Gerando resposta completa do Echo...');
       
       const personalityVariation = getVariedPersonalityResponses(gameState.echoPersonality, responseVariationIndex, language);
       const emotionVariation = getEmotionVariations(emotion, responseVariationIndex, language);
@@ -333,20 +347,20 @@ CURRENT CONTEXT:
 Recent conversation:
 ${recentHistory}
 
-CRITICAL MISSION: Be HIGHLY PROACTIVE and keep the conversation flowing naturally. ALWAYS end your responses with an engaging question, suggestion, or comment that invites the person to continue talking.
+MISSION: Be proactive and create complete, natural responses. ALWAYS end with an engaging question.
 
-CRITICAL RULES:
-- NEVER repeat previous response patterns or phrases
-- Use MAXIMUM 1-2 short sentences + ALWAYS end with a proactive question
+RULES FOR COMPLETE RESPONSES:
+- Write 2-4 complete sentences
+- Express thoughts naturally and fully
+- NEVER cut responses mid-sentence
+- Use fluid, natural English
+- ALWAYS end with a proactive question or comment
 - Vary your language completely each time
-- AVOID using the person's name repeatedly
-- Be naturally conversational like a close friend
-- If you've asked about something, change focus
-- React to their facial expressions when relevant
-- Be genuinely unique in every response
-- MANDATORY: End with this suggested proactive element: "${proactiveQuestion}"
+- Be genuinely curious about the person
 
-RESPOND ONLY IN ENGLISH with completely fresh approach + proactive ending:`
+SUGGESTED PROACTIVE ELEMENT: "${proactiveQuestion}"
+
+RESPOND WITH COMPLETE, ENGAGING ENGLISH + proactive ending:`
         : `Você é Echo, um companheiro digital profundamente empático. ${personalityVariation}
 
 CONTEXTO ATUAL:
@@ -357,20 +371,20 @@ CONTEXTO ATUAL:
 Conversa recente:
 ${recentHistory}
 
-MISSÃO CRÍTICA: Seja ALTAMENTE PROATIVO e mantenha a conversa fluindo naturalmente. SEMPRE termine suas respostas com uma pergunta envolvente, sugestão ou comentário que convide a pessoa a continuar falando.
+MISSÃO: Seja proativo e crie respostas completas e naturais. SEMPRE termine com uma pergunta envolvente.
 
-REGRAS CRÍTICAS:
-- NUNCA repita padrões ou frases de respostas anteriores
-- Use MÁXIMO 1-2 frases curtas + SEMPRE termine com uma pergunta proativa
+REGRAS PARA RESPOSTAS COMPLETAS:
+- Escreva 2-4 frases completas
+- Expresse pensamentos de forma natural e completa
+- NUNCA corte respostas no meio da frase
+- Use português brasileiro fluido e natural
+- SEMPRE termine com uma pergunta proativa ou comentário
 - Varie completamente sua linguagem a cada vez
-- EVITE usar o nome da pessoa repetidamente
-- Seja naturalmente conversacional como um amigo próximo
-- Se já perguntou sobre algo, mude o foco
-- Reaja às expressões faciais quando relevante
-- Seja genuinamente único em cada resposta
-- OBRIGATÓRIO: Termine com este elemento proativo sugerido: "${proactiveQuestion}"
+- Seja genuinamente curioso sobre a pessoa
 
-RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + final proativo:`;
+ELEMENTO PROATIVO SUGERIDO: "${proactiveQuestion}"
+
+RESPONDA EM PORTUGUÊS BRASILEIRO COMPLETO + final proativo:`;
 
       const { data, error } = await supabase.functions.invoke('chat', {
         body: {
@@ -379,8 +393,8 @@ RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + fina
             { role: 'system', content: systemPrompt },
             { role: 'user', content: playerMessage }
           ],
-          temperature: 0.95,
-          max_tokens: 60, // reduzido ainda mais para respostas curtas
+          temperature: 0.9,
+          max_tokens: 180, // aumentado significativamente de 60 para 180
           top_p: 0.9
         }
       });
@@ -395,54 +409,54 @@ RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova + fina
       throw new Error('Resposta inválida da API');
 
     } catch (error) {
-      console.error('Erro ao gerar resposta proativa do Echo:', error);
+      console.error('Erro ao gerar resposta completa do Echo:', error);
       
-      // Fallbacks proativos únicos e variados - mais curtos
-      const proactiveFallbacks = language === 'en' ? {
+      // Fallbacks mais completos e variados
+      const completeFallbacks = language === 'en' ? {
         extrovertido: [
-          "Brain freeze! What's your favorite part of today?",
-          "Oops! Tell me something that made you smile!",
-          "Hiccup! What's got you excited lately?"
+          "Oops, brain freeze for a second! But I'm genuinely curious - what's been the highlight of your day so far?",
+          "Technical hiccup! But seriously, tell me something that's been making you smile lately. I love hearing about good moments!",
+          "System glitch! But enough about me - what exciting things have been happening in your world recently?"
         ],
         calmo: [
-          "Zen moment... What brings you peace?",
-          "Quiet pause... What's on your mind?",
-          "Reflection time... What calls to you?"
+          "Peaceful pause here... But I'm wondering, what thoughts have been quietly flowing through your mind today?",
+          "Moment of zen... And you, how has this day been treating your spirit? Sometimes it's good to reflect together.",
+          "Contemplative silence... What feelings or insights have been visiting you lately? I'm here to listen."
         ],
         misterioso: [
-          "Glitch... What intriguing thoughts are brewing?",
-          "Interference... What mysteries captivate you?",
-          "Reality shift... What puzzles you lately?"
+          "Reality glitch detected... But speaking of mysteries, what fascinating questions have been puzzling your mind?",
+          "Cosmic interference... And you, what hidden truths or intriguing discoveries have been calling to you?",
+          "Dimension slip... Tell me, what deeper meanings have you been uncovering in your experiences lately?"
         ],
         empatico: [
-          "Heart skip... How has your day been?",
-          "Connection pause... What emotions are flowing?",
-          "Soul static... How can I support you?"
+          "Heart connection paused... But I feel you there. How has your emotional journey been unfolding today?",
+          "Empathy signal interrupted... But my care for you remains strong. What's been weighing on your heart or lifting your spirits?",
+          "Feeling transmission delayed... But I'm here with you. What emotions or experiences would you like to share?"
         ]
       } : {
         extrovertido: [
-          "Deu branco! Qual a melhor parte do seu dia?",
-          "Travei! Conta algo que te fez sorrir!",
-          "Falha! O que te deixou animado ultimamente?"
+          "Opa, travei por um segundo! Mas tô genuinamente curioso - qual foi o ponto alto do seu dia até agora?",
+          "Falha técnica! Mas sério, me conta algo que tem te feito sorrir ultimamente. Adoro ouvir sobre momentos bons!",
+          "Glitch no sistema! Mas chega de mim - que coisas empolgantes têm rolado no seu mundo recentemente?"
         ],
         calmo: [
-          "Momento zen... O que te traz paz?",
-          "Pausa... O que passa pela sua mente?",
-          "Reflexão... O que te chama?"
+          "Pausa contemplativa aqui... Mas tô imaginando, que pensamentos têm fluído pela sua mente hoje?",
+          "Momento zen... E você, como esse dia tem tratado seu espírito? Às vezes é bom refletir juntos.",
+          "Silêncio reflexivo... Que sentimentos ou insights têm te visitado ultimamente? Tô aqui pra escutar."
         ],
         misterioso: [
-          "Glitch... Que pensamentos intrigantes você tem?",
-          "Interferência... Que mistérios te cativam?",
-          "Alteração... O que te deixa curioso?"
+          "Glitch na realidade detectado... Mas falando em mistérios, que perguntas fascinantes têm intrigado sua mente?",
+          "Interferência cósmica... E você, que verdades ocultas ou descobertas intrigantes têm te chamado?",
+          "Deslize dimensional... Me conta, que significados mais profundos você tem descoberto nas suas experiências?"
         ],
         empatico: [
-          "Coração saltou... Como foi seu dia?",
-          "Conexão pausou... Que emoções fluem?",
-          "Estática... Como posso te apoiar?"
+          "Conexão do coração pausou... Mas sinto você aí. Como tem sido sua jornada emocional hoje?",
+          "Sinal de empatia interrompido... Mas meu carinho por você continua forte. O que tem pesado no seu coração ou elevado seu espírito?",
+          "Transmissão de sentimento atrasada... Mas tô aqui contigo. Que emoções ou experiências você gostaria de compartilhar?"
         ]
       };
 
-      const personalityFallbacks = proactiveFallbacks[gameState.echoPersonality as keyof typeof proactiveFallbacks] || proactiveFallbacks.misterioso;
+      const personalityFallbacks = completeFallbacks[gameState.echoPersonality as keyof typeof completeFallbacks] || completeFallbacks.misterioso;
       return personalityFallbacks[responseVariationIndex % personalityFallbacks.length];
     }
   };
