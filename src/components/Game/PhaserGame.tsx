@@ -17,16 +17,24 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
 
   // Wrapper para onChatToggle que também gerencia o estado do Echo
   const wrappedChatToggle = (show: boolean) => {
-    console.log('Chat toggle:', show);
+    console.log('=== WRAPPER CHAT TOGGLE ===');
+    console.log('Chat toggle recebido:', show);
+    console.log('Scene ref existe:', !!sceneRef.current);
+    
     onChatToggle(show);
     
     if (!show && sceneRef.current) {
-      // Quando o chat é fechado, garantir que a cena pare o chat
+      console.log('Chat fechando - chamando stopChat na cena');
+      // Chamar stopChat imediatamente, sem delay
+      sceneRef.current.stopChat();
+      
+      // Garantir que o forceStopChat seja chamado também após um pequeno delay
       setTimeout(() => {
         if (sceneRef.current) {
+          console.log('Executando forceStopChat como backup');
           sceneRef.current.forceStopChat();
         }
-      }, 100);
+      }, 50);
     }
   };
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -78,14 +77,22 @@ const EchoSoul = () => {
   }, [updateEchoMood]);
 
   const handleChatClose = useCallback(() => {
+    console.log('=== HANDLE CHAT CLOSE ===');
     console.log('Fechando chat do React');
     setShowChat(false);
   }, []);
 
   const handleChatToggle = useCallback((show: boolean) => {
-    console.log('Toggle chat:', show);
+    console.log('=== HANDLE CHAT TOGGLE ===');
+    console.log('Toggle chat recebido:', show);
+    console.log('Estado atual do showChat:', showChat);
+    
     setShowChat(show);
-  }, []);
+    
+    if (!show) {
+      console.log('Chat sendo fechado - showChat definido como false');
+    }
+  }, [showChat]);
 
   if (!gameState) {
     return (

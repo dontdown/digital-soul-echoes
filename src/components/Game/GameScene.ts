@@ -224,7 +224,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startChat() {
-    console.log('Iniciando chat - pausando movimento e desabilitando controles');
+    console.log('=== INICIANDO CHAT ===');
+    console.log('Estado antes: isChatting =', this.isChatting);
+    
     this.isChatting = true;
     
     // Parar movimentos imediatamente
@@ -232,13 +234,19 @@ export class GameScene extends Phaser.Scene {
     this.echo.setVelocity(0);
     
     // Desabilitar captura global de teclas para permitir digitação no chat
-    this.input.keyboard!.disableGlobalCapture();
+    if (this.input.keyboard) {
+      this.input.keyboard.disableGlobalCapture();
+      console.log('Teclas globais DESABILITADAS');
+    }
     
+    console.log('Estado após iniciar: isChatting =', this.isChatting);
     this.onChatToggle(true);
   }
 
   public stopChat() {
-    console.log('Finalizando chat - retomando movimento e reabilitando controles');
+    console.log('=== PARANDO CHAT ===');
+    console.log('Estado antes: isChatting =', this.isChatting);
+    
     this.isChatting = false;
     
     // Garantir que as velocidades sejam zeradas antes de permitir movimento
@@ -246,9 +254,13 @@ export class GameScene extends Phaser.Scene {
     this.echo.setVelocity(0);
     
     // Reabilitar captura global de teclas para o jogo
-    this.input.keyboard!.enableGlobalCapture();
+    if (this.input.keyboard) {
+      this.input.keyboard.enableGlobalCapture();
+      console.log('Teclas globais REABILITADAS');
+    }
     
-    this.onChatToggle(false);
+    console.log('Estado após parar: isChatting =', this.isChatting);
+    console.log('=== MOVIMENTO LIBERADO ===');
   }
 
   private checkProximity() {
@@ -262,7 +274,9 @@ export class GameScene extends Phaser.Scene {
 
     // Se saiu de perto durante o chat, fechar o chat
     if (!this.isNearEcho && this.isChatting) {
+      console.log('Saiu de perto durante o chat - fechando');
       this.stopChat();
+      this.onChatToggle(false);
     }
   }
 
@@ -348,12 +362,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   public forceStopChat() {
-    console.log('Forçando parada do chat');
+    console.log('=== FORÇANDO PARADA DO CHAT ===');
+    console.log('Estado antes da força: isChatting =', this.isChatting);
+    
     this.isChatting = false;
     this.player.setVelocity(0);
     this.echo.setVelocity(0);
     
     // Reabilitar captura global de teclas
-    this.input.keyboard!.enableGlobalCapture();
+    if (this.input.keyboard) {
+      this.input.keyboard.enableGlobalCapture();
+      console.log('Teclas globais FORÇADAMENTE REABILITADAS');
+    }
+    
+    console.log('Estado após força: isChatting =', this.isChatting);
+    console.log('=== MOVIMENTO FORÇADAMENTE LIBERADO ===');
   }
 }
