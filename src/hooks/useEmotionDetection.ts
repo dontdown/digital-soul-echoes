@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useMediaPipeEmotion } from './useMediaPipeEmotion';
+import { useTensorFlowEmotion } from './useTensorFlowEmotion';
 
 export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
 export type EmotionModel = 'mediapipe' | 'opencv' | 'tensorflow' | 'simulated';
@@ -27,8 +28,9 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Hook do MediaPipe
+  // Hooks dos modelos
   const mediaPipe = useMediaPipeEmotion(onEmotionChange);
+  const tensorFlow = useTensorFlowEmotion(onEmotionChange);
   
   const switchModel = useCallback((model: EmotionModel) => {
     // Parar detecção atual
@@ -50,6 +52,11 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
         await mediaPipe.loadModel();
         setIsModelLoaded(mediaPipe.isModelLoaded);
         setError(mediaPipe.error);
+      } else if (currentModel === 'tensorflow') {
+        console.log('📦 Carregando TensorFlow.js...');
+        await tensorFlow.loadModel();
+        setIsModelLoaded(tensorFlow.isModelLoaded);
+        setError(tensorFlow.error);
       } else if (currentModel === 'simulated') {
         console.log('📦 Carregando modo simulado...');
         setIsModelLoaded(true);
@@ -64,7 +71,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       setError(`Erro ao carregar ${currentModel}: ${err.message}`);
       setIsModelLoaded(false);
     }
-  }, [currentModel, mediaPipe]);
+  }, [currentModel, mediaPipe, tensorFlow]);
   
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!isModelLoaded) return;
@@ -76,6 +83,10 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       mediaPipe.startDetection(videoElement);
       setCurrentEmotion(mediaPipe.currentEmotion);
       setConfidence(mediaPipe.confidence);
+    } else if (currentModel === 'tensorflow') {
+      tensorFlow.startDetection(videoElement);
+      setCurrentEmotion(tensorFlow.currentEmotion);
+      setConfidence(tensorFlow.confidence);
     } else if (currentModel === 'simulated') {
       // Simulação básica
       const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso'];
@@ -95,7 +106,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       
       (window as any).emotionInterval = interval;
     }
-  }, [isModelLoaded, currentModel, mediaPipe, onEmotionChange]);
+  }, [isModelLoaded, currentModel, mediaPipe, tensorFlow, onEmotionChange]);
   
   const stopDetection = useCallback(() => {
     setIsDetecting(false);
@@ -103,21 +114,28 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     
     if (currentModel === 'mediapipe') {
       mediaPipe.stopDetection();
+    } else if (currentModel === 'tensorflow') {
+      tensorFlow.stopDetection();
     } else if ((window as any).emotionInterval) {
       clearInterval((window as any).emotionInterval);
       delete (window as any).emotionInterval;
     }
     
     console.log('⏹️ Detecção parada');
-  }, [currentModel, mediaPipe]);
+  }, [currentModel, mediaPipe, tensorFlow]);
   
-  // Sincronizar estados do MediaPipe
+  // Sincronizar estados dos modelos
   useState(() => {
     if (currentModel === 'mediapipe') {
       setCurrentEmotion(mediaPipe.currentEmotion);
       setConfidence(mediaPipe.confidence);
       setIsDetecting(mediaPipe.isDetecting);
       if (mediaPipe.error) setError(mediaPipe.error);
+    } else if (currentModel === 'tensorflow') {
+      setCurrentEmotion(tensorFlow.currentEmotion);
+      setConfidence(tensorFlow.confidence);
+      setIsDetecting(tensorFlow.isDetecting);
+      if (tensorFlow.error) setError(tensorFlow.error);
     }
   });
   

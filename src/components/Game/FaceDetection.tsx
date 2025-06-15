@@ -68,7 +68,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
       id: 'tensorflow',
       name: 'TensorFlow.js',
       description: 'TensorFlow.js com modelos customizados',
-      status: '🔧 Implementar'
+      status: '✅ Implementado'
     },
     {
       id: 'opencv',
@@ -201,21 +201,30 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 Detecção de emoções em tempo real usando IA do Google
               </div>
             </div>
+          ) : currentModel === 'tensorflow' ? (
+            <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
+              <div className="text-blue-400 text-sm font-medium">
+                🧠 TensorFlow.js Ativo
+              </div>
+              <div className="text-blue-300 text-xs mt-1">
+                Detecção de emoções usando modelos de deep learning
+              </div>
+            </div>
           ) : currentModel === 'simulated' ? (
             <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-3">
               <div className="text-orange-400 text-sm font-medium">
                 🎭 Modo Simulado Ativo
               </div>
               <div className="text-orange-300 text-xs mt-1">
-                Escolha MediaPipe para detecção real de emoções
+                Escolha MediaPipe ou TensorFlow.js para detecção real
               </div>
             </div>
           ) : (
-            <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
-              <div className="text-blue-400 text-sm font-medium">
+            <div className="bg-purple-900/20 border border-purple-500/50 rounded-lg p-3">
+              <div className="text-purple-400 text-sm font-medium">
                 🔧 Modelo {currentModel}
               </div>
-              <div className="text-blue-300 text-xs mt-1">
+              <div className="text-purple-300 text-xs mt-1">
                 Este modelo ainda precisa ser implementado
               </div>
             </div>
@@ -301,7 +310,9 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         <div className="text-xs text-gray-400 text-center">
           {currentModel === 'mediapipe' ? 
             '🤖 MediaPipe carregado - detecção real ativa!' : 
-            '🔧 Clique em ⚙️ para escolher MediaPipe'
+            currentModel === 'tensorflow' ?
+            '🧠 TensorFlow.js carregado - modelo demo ativo!' :
+            '🔧 Clique em ⚙️ para escolher um modelo de IA'
           }
         </div>
       </motion.div>
