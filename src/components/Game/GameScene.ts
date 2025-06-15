@@ -36,8 +36,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Criar todos os sprites de personagens com animações
-    CharacterSprites.createPlayerSprites(this);
+    // Criar apenas os sprites necessários
+    CharacterSprites.createPlayerSprite(this, this.gameState.playerModel);
     CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
 
     // Obstáculos
@@ -60,17 +60,17 @@ export class GameScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.createObstacles();
 
-    // Criar jogador com o modelo escolhido e escala maior
-    const playerTexture = `player_${this.gameState.playerModel}_walk`;
-    this.player = this.physics.add.sprite(100, 300, playerTexture);
+    // Criar jogador com o modelo escolhido
+    const playerTexture = `player_${this.gameState.playerModel}_atlas`;
+    this.player = this.physics.add.sprite(100, 300, playerTexture, 0);
     this.player.setCollideWorldBounds(true);
-    this.player.setScale(3);
+    this.player.setScale(4);
 
-    // Criar Echo com sprite baseado no humor e escala maior
-    const echoTexture = `player_echo_${this.gameState.echoMood}_walk`;
-    this.echo = this.physics.add.sprite(400, 300, echoTexture);
+    // Criar Echo
+    const echoTexture = `echo_${this.gameState.echoMood}_atlas`;
+    this.echo = this.physics.add.sprite(400, 300, echoTexture, 0);
     this.echo.setCollideWorldBounds(true);
-    this.echo.setScale(3);
+    this.echo.setScale(4);
 
     // Configurar física
     this.physics.add.collider(this.player, this.obstacles);
@@ -118,7 +118,6 @@ export class GameScene extends Phaser.Scene {
     graphics.fillGradientStyle(0x1e1b4b, 0x1e1b4b, 0x312e81, 0x312e81);
     graphics.fillRect(0, 0, 800, 600);
 
-    // Adicionar "estrelas"
     for (let i = 0; i < 50; i++) {
       const x = Phaser.Math.Between(0, 800);
       const y = Phaser.Math.Between(0, 600);
@@ -128,13 +127,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createObstacles() {
-    // Árvores
     this.obstacles.create(200, 150, 'tree');
     this.obstacles.create(600, 100, 'tree');
     this.obstacles.create(150, 450, 'tree');
     this.obstacles.create(650, 500, 'tree');
 
-    // Rochas
     this.obstacles.create(350, 200, 'rock');
     this.obstacles.create(500, 400, 'rock');
     this.obstacles.create(100, 250, 'rock');
@@ -142,57 +139,50 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAnimations() {
-    // Criar animações de caminhada para cada modelo de jogador
-    const models = ['adventure', 'mage', 'warrior', 'noble'];
-    
-    models.forEach(model => {
-      const textureKey = `player_${model}_walk`;
-      
-      if (this.textures.exists(textureKey)) {
-        // Animação de caminhada
-        this.anims.create({
-          key: `${model}_walk`,
-          frames: this.anims.generateFrameNumbers(textureKey, { start: 0, end: 3 }),
-          frameRate: 8,
-          repeat: -1
-        });
+    const playerKey = `player_${this.gameState.playerModel}_atlas`;
+    if (this.textures.exists(playerKey)) {
+      this.anims.create({
+        key: `${this.gameState.playerModel}_walk`,
+        frames: [
+          { key: playerKey, frame: 0 },
+          { key: playerKey, frame: 1 },
+          { key: playerKey, frame: 2 },
+          { key: playerKey, frame: 3 }
+        ],
+        frameRate: 8,
+        repeat: -1
+      });
 
-        // Animação parada
-        this.anims.create({
-          key: `${model}_idle`,
-          frames: [{ key: textureKey, frame: 0 }],
-          frameRate: 1
-        });
-      }
-    });
+      this.anims.create({
+        key: `${this.gameState.playerModel}_idle`,
+        frames: [{ key: playerKey, frame: 0 }],
+        frameRate: 1
+      });
+    }
 
-    // Criar animações para o Echo
-    const moods = ['feliz', 'triste', 'raiva', 'calmo', 'misterioso'];
-    
-    moods.forEach(mood => {
-      const textureKey = `player_echo_${mood}_walk`;
-      
-      if (this.textures.exists(textureKey)) {
-        // Animação de caminhada do Echo
-        this.anims.create({
-          key: `echo_${mood}_walk`,
-          frames: this.anims.generateFrameNumbers(textureKey, { start: 0, end: 3 }),
-          frameRate: 6,
-          repeat: -1
-        });
+    const echoKey = `echo_${this.gameState.echoMood}_atlas`;
+    if (this.textures.exists(echoKey)) {
+      this.anims.create({
+        key: `echo_${this.gameState.echoMood}_walk`,
+        frames: [
+          { key: echoKey, frame: 0 },
+          { key: echoKey, frame: 1 },
+          { key: echoKey, frame: 2 },
+          { key: echoKey, frame: 3 }
+        ],
+        frameRate: 6,
+        repeat: -1
+      });
 
-        // Animação parada do Echo
-        this.anims.create({
-          key: `echo_${mood}_idle`,
-          frames: [{ key: textureKey, frame: 0 }],
-          frameRate: 1
-        });
-      }
-    });
+      this.anims.create({
+        key: `echo_${this.gameState.echoMood}_idle`,
+        frames: [{ key: echoKey, frame: 0 }],
+        frameRate: 1
+      });
+    }
   }
 
   private handlePlayerMovement() {
-    // Se estiver conversando, o jogador não pode se mover
     if (this.isChatting) {
       this.player.setVelocity(0);
       this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
@@ -222,7 +212,6 @@ export class GameScene extends Phaser.Scene {
       this.player.setVelocityY(0);
     }
 
-    // Tocar animação baseada no movimento
     if (isMoving) {
       this.player.anims.play(`${this.gameState.playerModel}_walk`, true);
     } else {
@@ -231,7 +220,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleEchoMovement() {
-    // Se estiver conversando, Echo fica parado
     if (this.isChatting) {
       this.echo.setVelocity(0);
       this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
@@ -254,7 +242,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleInteraction() {
-    // Verificar se a tecla E foi pressionada e se está perto do Echo
     if (Phaser.Input.Keyboard.JustDown(this.eKey) && this.isNearEcho && !this.isChatting) {
       this.startChat();
     }
@@ -271,42 +258,26 @@ export class GameScene extends Phaser.Scene {
 
   private startChat() {
     console.log('=== INICIANDO CHAT ===');
-    console.log('Estado antes: isChatting =', this.isChatting);
-    
     this.isChatting = true;
-    
-    // Parar movimentos imediatamente
     this.player.setVelocity(0);
     this.echo.setVelocity(0);
     
-    // Desabilitar captura global de teclas para permitir digitação no chat
     if (this.input.keyboard) {
       this.input.keyboard.disableGlobalCapture();
-      console.log('Teclas globais DESABILITADAS');
     }
     
-    console.log('Estado após iniciar: isChatting =', this.isChatting);
     this.onChatToggle(true);
   }
 
   public stopChat() {
     console.log('=== PARANDO CHAT ===');
-    console.log('Estado antes: isChatting =', this.isChatting);
-    
     this.isChatting = false;
-    
-    // Garantir que as velocidades sejam zeradas antes de permitir movimento
     this.player.setVelocity(0);
     this.echo.setVelocity(0);
     
-    // Reabilitar captura global de teclas para o jogo
     if (this.input.keyboard) {
       this.input.keyboard.enableGlobalCapture();
-      console.log('Teclas globais REABILITADAS');
     }
-    
-    console.log('Estado após parar: isChatting =', this.isChatting);
-    console.log('=== MOVIMENTO LIBERADO ===');
   }
 
   private checkProximity() {
@@ -318,9 +289,7 @@ export class GameScene extends Phaser.Scene {
     const wasNear = this.isNearEcho;
     this.isNearEcho = distance < 100;
 
-    // Se saiu de perto durante o chat, fechar o chat
     if (!this.isNearEcho && this.isChatting) {
-      console.log('Saiu de perto durante o chat - fechando');
       this.stopChat();
       this.onChatToggle(false);
     }
@@ -330,15 +299,12 @@ export class GameScene extends Phaser.Scene {
     const personality = this.gameState.echoPersonality;
     
     if (personality === 'extrovertido') {
-      // Segue o jogador
       this.echoTarget.x = this.player.x + Phaser.Math.Between(-50, 50);
       this.echoTarget.y = this.player.y + Phaser.Math.Between(-50, 50);
     } else if (personality === 'calmo') {
-      // Movimento lento e aleatório
       this.echoTarget.x = Phaser.Math.Between(100, 700);
       this.echoTarget.y = Phaser.Math.Between(100, 500);
     } else if (personality === 'misterioso') {
-      // Evita o jogador às vezes
       const avoidPlayer = Math.random() > 0.5;
       if (avoidPlayer) {
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.echo.x, this.echo.y);
@@ -350,20 +316,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Garantir que o target esteja dentro dos limites
     this.echoTarget.x = Phaser.Math.Clamp(this.echoTarget.x, 50, 750);
     this.echoTarget.y = Phaser.Math.Clamp(this.echoTarget.y, 50, 550);
-  }
-
-  private getEchoColor(): number {
-    const mood = this.gameState.echoMood;
-    switch (mood) {
-      case 'feliz': return 0xfbbf24;
-      case 'triste': return 0x3b82f6;
-      case 'raiva': return 0xef4444;
-      case 'calmo': return 0x10b981;
-      default: return 0x8b5cf6;
-    }
   }
 
   private getEchoSpeed(): number {
@@ -378,24 +332,19 @@ export class GameScene extends Phaser.Scene {
 
   public updateEchoMood(newMood: string) {
     if (!this.isSceneReady || !this.add) {
-      console.log('Cena não está pronta ainda, atualizando mood mais tarde');
       this.gameState.echoMood = newMood;
       return;
     }
 
     this.gameState.echoMood = newMood;
     
-    // Verificar se já existe uma texture com esse mood para evitar duplicatas
-    const textureKey = `player_echo_${newMood}_walk`;
+    const textureKey = `echo_${newMood}_atlas`;
     if (!this.textures.exists(textureKey)) {
-      // Recriar sprite do Echo com novo mood
       CharacterSprites.createEchoSprite(this, newMood);
     }
     
-    // Atualizar sprite do Echo
     if (this.echo) {
-      this.echo.setTexture(textureKey);
-      // Garantir que a animação seja atualizada
+      this.echo.setTexture(textureKey, 0);
       this.echo.anims.play(`echo_${newMood}_idle`, true);
     }
   }
@@ -406,19 +355,12 @@ export class GameScene extends Phaser.Scene {
 
   public forceStopChat() {
     console.log('=== FORÇANDO PARADA DO CHAT ===');
-    console.log('Estado antes da força: isChatting =', this.isChatting);
-    
     this.isChatting = false;
     this.player.setVelocity(0);
     this.echo.setVelocity(0);
     
-    // Reabilitar captura global de teclas
     if (this.input.keyboard) {
       this.input.keyboard.enableGlobalCapture();
-      console.log('Teclas globais FORÇADAMENTE REABILITADAS');
     }
-    
-    console.log('Estado após força: isChatting =', this.isChatting);
-    console.log('=== MOVIMENTO FORÇADAMENTE LIBERADO ===');
   }
 }
