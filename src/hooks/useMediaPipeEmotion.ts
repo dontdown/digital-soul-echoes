@@ -1,6 +1,6 @@
 
 import { useState, useRef, useCallback } from 'react';
-import { FaceLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
+import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 
 export type MediaPipeEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
 
@@ -24,7 +24,6 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
   
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const loadModel = useCallback(async () => {
     try {
@@ -38,7 +37,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
       );
       
-      // Criar o FaceLandmarker
+      // Criar o FaceLandmarker com blendshapes habilitadas
       faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
@@ -73,15 +72,31 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       shapeMap[shape.categoryName] = shape.score;
     });
 
-    // Calcular emoções individuais primeiro
-    const felizScore = (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0) + (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0);
-    const tristeScore = (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0) + (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0);
-    const surprsoScore = (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0) + (shapeMap['jawOpen'] || 0);
-    const raivaScore = (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0) + (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0);
-    const cansadoScore = (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0) + (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0);
+    // Calcular scores individuais de emoções primeiro
+    const felizScore = Math.max(
+      (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0),
+      (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0)
+    );
     
-    // Calcular neutro baseado nos outros scores
-    const neutroScore = 1 - Math.max(felizScore, tristeScore, surprsoScore, raivaScore, cansadoScore);
+    const tristeScore = Math.max(
+      (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0),
+      (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0)
+    );
+    
+    const surprsoScore = Math.max(
+      (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0),
+      (shapeMap['jawOpen'] || 0) * 0.8
+    );
+    
+    const raivaScore = Math.max(
+      (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0),
+      (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0)
+    );
+    
+    const cansadoScore = Math.max(
+      (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0),
+      (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0)
+    );
 
     // Criar objeto de emoções com os scores calculados
     const emotions = {
@@ -90,7 +105,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       surpreso: surprsoScore,
       raiva: raivaScore,
       cansado: cansadoScore,
-      neutro: neutroScore
+      neutro: 1 - Math.max(felizScore, tristeScore, surprsoScore, raivaScore, cansadoScore)
     };
 
     // Encontrar a emoção com maior pontuação
@@ -104,9 +119,12 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       }
     });
 
+    // Normalizar confiança para 0-1
+    const normalizedConfidence = Math.min(maxScore * 3, 1);
+
     return { 
       emotion: maxEmotion, 
-      confidence: Math.min(maxScore * 2, 1) // Normalizar para 0-1
+      confidence: normalizedConfidence
     };
   }, []);
 
@@ -127,11 +145,15 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
           onEmotionChange(emotion);
         }
         
-        console.log(`😊 Emoção detectada: ${emotion} (${Math.round(conf * 100)}%)`);
+        console.log(`😊 MediaPipe detectou: ${emotion} (${Math.round(conf * 100)}%)`);
+      } else {
+        // Se não detectar rosto, definir como neutro
+        setCurrentEmotion('neutro');
+        setConfidence(0.3);
       }
       
     } catch (err) {
-      console.error('❌ Erro no processamento do frame:', err);
+      console.error('❌ Erro no processamento MediaPipe:', err);
     }
 
     if (isDetecting) {
@@ -141,7 +163,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
 
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!faceLandmarkerRef.current || !isModelLoaded) {
-      console.warn('⚠️ Modelo não carregado');
+      console.warn('⚠️ Modelo MediaPipe não carregado');
       return;
     }
 

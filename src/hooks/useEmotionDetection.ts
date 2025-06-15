@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMediaPipeEmotion } from './useMediaPipeEmotion';
 import { useTensorFlowEmotion } from './useTensorFlowEmotion';
 
@@ -21,7 +21,7 @@ interface UseEmotionDetectionReturn {
 }
 
 export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion) => void): UseEmotionDetectionReturn => {
-  const [currentModel, setCurrentModel] = useState<EmotionModel>('simulated');
+  const [currentModel, setCurrentModel] = useState<EmotionModel>('mediapipe');
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState<DetectedEmotion | null>(null);
   const [confidence, setConfidence] = useState(0);
@@ -81,12 +81,8 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     
     if (currentModel === 'mediapipe') {
       mediaPipe.startDetection(videoElement);
-      setCurrentEmotion(mediaPipe.currentEmotion);
-      setConfidence(mediaPipe.confidence);
     } else if (currentModel === 'tensorflow') {
       tensorFlow.startDetection(videoElement);
-      setCurrentEmotion(tensorFlow.currentEmotion);
-      setConfidence(tensorFlow.confidence);
     } else if (currentModel === 'simulated') {
       // Simulação básica
       const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso'];
@@ -125,7 +121,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   }, [currentModel, mediaPipe, tensorFlow]);
   
   // Sincronizar estados dos modelos
-  useState(() => {
+  useEffect(() => {
     if (currentModel === 'mediapipe') {
       setCurrentEmotion(mediaPipe.currentEmotion);
       setConfidence(mediaPipe.confidence);
@@ -137,7 +133,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       setIsDetecting(tensorFlow.isDetecting);
       if (tensorFlow.error) setError(tensorFlow.error);
     }
-  });
+  }, [currentModel, mediaPipe.currentEmotion, mediaPipe.confidence, mediaPipe.isDetecting, mediaPipe.error, tensorFlow.currentEmotion, tensorFlow.confidence, tensorFlow.isDetecting, tensorFlow.error]);
   
   return {
     currentModel,
