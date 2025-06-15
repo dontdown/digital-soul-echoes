@@ -15,8 +15,8 @@ const Index = () => {
             key={i}
             className="absolute w-1 h-1 bg-cyan-400 rounded-full"
             animate={{
-              x: [Math.random() * window.innerWidth, Math.random() * window.innerWidth],
-              y: [Math.random() * window.innerHeight, Math.random() * window.innerHeight],
+              x: [Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200), Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200)],
+              y: [Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800), Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800)],
               opacity: [0, 1, 0],
             }}
             transition={{
@@ -32,18 +32,18 @@ const Index = () => {
         ))}
       </div>
 
-      <div className="text-center z-10 max-w-2xl mx-auto px-6">
+      <div className="text-center z-10 max-w-2xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          <h1 className="text-7xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
             EchoSoul
           </h1>
           
           <motion.p 
-            className="text-xl text-gray-300 mb-12 leading-relaxed"
+            className="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-12 leading-relaxed px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 1 }}
@@ -53,12 +53,12 @@ const Index = () => {
 
           {/* Pulsating Echo visualization */}
           <motion.div
-            className="w-32 h-32 mx-auto mb-12 relative"
+            className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-8 sm:mb-12 relative"
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
             <div className="w-full h-full rounded-full bg-gradient-to-r from-cyan-500/30 to-purple-500/30 blur-xl absolute"></div>
-            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 absolute top-4 left-4 animate-pulse"></div>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 absolute top-2 left-2 sm:top-4 sm:left-4 animate-pulse"></div>
           </motion.div>
 
           <motion.div
@@ -68,7 +68,7 @@ const Index = () => {
           >
             <Button
               onClick={() => navigate("/create-echo")}
-              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
             >
               Começar sua conexão
             </Button>

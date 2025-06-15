@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -64,10 +63,8 @@ const Chat = () => {
   };
 
   const splitLongMessage = (text: string): string[] => {
-    // Aumentamos o limite para permitir mensagens mais completas
-    const maxLength = 280; // aumentado de 150 para 280 caracteres
+    const maxLength = 280;
     
-    // Primeiro, tentamos dividir por frases completas
     const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
     const chunks: string[] = [];
     let currentChunk = "";
@@ -75,7 +72,6 @@ const Chat = () => {
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
       
-      // Se a frase sozinha já é muito longa, mantemos ela como está
       if (trimmedSentence.length > maxLength) {
         if (currentChunk) {
           chunks.push(currentChunk.trim());
@@ -85,7 +81,6 @@ const Chat = () => {
         continue;
       }
       
-      // Se adicionar esta frase ultrapassaria o limite
       if (currentChunk.length + trimmedSentence.length + 1 > maxLength && currentChunk.length > 0) {
         chunks.push(currentChunk.trim());
         currentChunk = trimmedSentence;
@@ -98,7 +93,6 @@ const Chat = () => {
       chunks.push(currentChunk.trim());
     }
 
-    // Se não conseguimos dividir bem, retornamos o texto original
     return chunks.length > 0 ? chunks : [text];
   };
 
@@ -106,7 +100,7 @@ const Chat = () => {
     const chunks = splitLongMessage(content);
     
     for (let i = 0; i < chunks.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, i > 0 ? 2000 : 0)); // aumentado para 2 segundos entre mensagens
+      await new Promise(resolve => setTimeout(resolve, i > 0 ? 2000 : 0));
       
       const echoMessage: Message = {
         id: (Date.now() + i).toString(),
@@ -119,13 +113,12 @@ const Chat = () => {
       
       if (i < chunks.length - 1) {
         setIsTyping(true);
-        await new Promise(resolve => setTimeout(resolve, 1200)); // aumentado tempo de digitação
+        await new Promise(resolve => setTimeout(resolve, 1200));
       }
     }
   };
 
   const getProactivePrompts = (conversationTurn: number, emotion: string, personality: string) => {
-    // ... keep existing code (the same proactive prompts object)
     const proactiveQuestions = {
       extrovertido: [
         "E aí, me conta mais sobre isso! O que mais tá rolando?",
@@ -213,7 +206,7 @@ Responda de forma completa, envolvente e natural:`;
           { role: 'user', content: playerMessage }
         ],
         temperature: 0.9,
-        max_tokens: 200, // aumentado significativamente de 120 para 200
+        max_tokens: 200,
         top_p: 0.95
       };
 
@@ -242,7 +235,6 @@ Responda de forma completa, envolvente e natural:`;
     } catch (error) {
       console.error('Erro na geração de resposta:', error);
       
-      // Fallbacks mais completos
       const completeFallbacks = {
         extrovertido: [
           "Opa, travei aqui por um segundo! Mas bora continuar nossa conversa - me conta mais sobre o que tá acontecendo na sua vida hoje.",
@@ -282,7 +274,6 @@ Responda de forma completa, envolvente e natural:`;
     const emotion = detectEmotion(inputMessage);
     updateEchoMood(emotion);
 
-    // Check for memory-worthy content
     const memoryKeywords = ["morreu", "morte", "casamento", "trabalho", "família", "sonho", "medo"];
     if (memoryKeywords.some(keyword => inputMessage.toLowerCase().includes(keyword))) {
       addMemory(inputMessage);
@@ -301,7 +292,6 @@ Responda de forma completa, envolvente e natural:`;
     setInputMessage("");
     setIsTyping(true);
 
-    // Generate AI response
     try {
       console.log("🎯 Gerando resposta proativa do Echo...");
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
@@ -335,50 +325,50 @@ Responda de forma completa, envolvente e natural:`;
   if (!playerData) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-lg border-b border-slate-700 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Header - Mobile optimized */}
+      <div className="bg-slate-800/50 backdrop-blur-lg border-b border-slate-700 p-3 sm:p-4 flex-shrink-0">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 animate-pulse"></div>
-            <div>
-              <h2 className="text-white font-semibold">Echo</h2>
-              <p className="text-gray-400 text-sm">Personalidade: {echoPersonality}</p>
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 animate-pulse flex-shrink-0"></div>
+            <div className="min-w-0">
+              <h2 className="text-white font-semibold text-sm sm:text-base truncate">Echo</h2>
+              <p className="text-gray-400 text-xs sm:text-sm truncate">Personalidade: {echoPersonality}</p>
             </div>
           </div>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
             <Button
               onClick={showMemories}
               variant="ghost"
               size="sm"
-              className="text-cyan-400 hover:text-cyan-300"
+              className="text-cyan-400 hover:text-cyan-300 p-1 sm:p-2"
             >
-              <Brain className="w-4 h-4" />
+              <Brain className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
             <Button
               onClick={() => navigate("/mirror")}
               variant="ghost"
               size="sm"
-              className="text-purple-400 hover:text-purple-300"
+              className="text-purple-400 hover:text-purple-300 p-1 sm:p-2"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
             <Button
               onClick={() => navigate("/history")}
               variant="ghost"
               size="sm"
-              className="text-pink-400 hover:text-pink-300"
+              className="text-pink-400 hover:text-pink-300 p-1 sm:p-2"
             >
-              <History className="w-4 h-4" />
+              <History className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 h-[calc(100vh-140px)]">
-        <div className="max-w-4xl mx-auto space-y-4">
+      {/* Messages - Mobile optimized */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4">
           {messages.map((message) => (
             <motion.div
               key={message.id}
@@ -387,7 +377,7 @@ Responda de forma completa, envolvente e natural:`;
               className={`flex ${message.sender === "player" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-2xl text-sm sm:text-base ${
                   message.sender === "player"
                     ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white"
                     : "bg-slate-700 text-gray-200 border border-slate-600"
@@ -409,7 +399,7 @@ Responda de forma completa, envolvente e natural:`;
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="bg-slate-700 text-gray-200 px-4 py-2 rounded-2xl border border-slate-600">
+              <div className="bg-slate-700 text-gray-200 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-slate-600">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
@@ -422,19 +412,19 @@ Responda de forma completa, envolvente e natural:`;
         </div>
       </div>
 
-      {/* Input */}
-      <div className="bg-slate-800/50 backdrop-blur-lg border-t border-slate-700 p-4">
+      {/* Input - Mobile optimized */}
+      <div className="bg-slate-800/50 backdrop-blur-lg border-t border-slate-700 p-2 sm:p-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex space-x-2">
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
             placeholder="Digite sua mensagem..."
-            className="bg-slate-700 border-slate-600 text-white"
+            className="bg-slate-700 border-slate-600 text-white text-sm sm:text-base"
           />
           <Button
             onClick={handleSendMessage}
-            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 flex-shrink-0 px-3 sm:px-4"
           >
             <Send className="w-4 h-4" />
           </Button>
