@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEchoStore } from "@/store/echoStore";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 
 const CreateEcho = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { setPlayerData, setEchoPersonality } = useEchoStore();
   const [playerName, setPlayerName] = useState("");
   const [mood, setMood] = useState("");
@@ -23,6 +24,11 @@ const CreateEcho = () => {
     
     if (!playerName || !mood || !preference) {
       toast.error("Por favor, preencha todos os campos");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Você precisa estar logado para criar um Echo");
       return;
     }
 
@@ -37,18 +43,47 @@ const CreateEcho = () => {
     }
 
     try {
-      // Salvar estado do jogo no Supabase
-      await supabase
+      // Primeiro, verificar se já existe um Echo para este usuário e atualizar
+      const { data: existingEcho } = await supabase
         .from('game_state')
-        .insert({
-          player_name: playerName,
-          player_mood: mood,
-          player_preference: preference,
-          echo_personality: personality,
-          echo_mood: 'neutro',
-          echo_sprite: 'blue'
-        });
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
 
+      if (existingEcho) {
+        // Atualizar Echo existente
+        const { error } = await supabase
+          .from('game_state')
+          .update({
+            player_name: playerName,
+            player_mood: mood,
+            player_preference: preference,
+            echo_personality: personality,
+            echo_mood: 'neutro',
+            echo_sprite: 'blue',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Criar novo Echo
+        const { error } = await supabase
+          .from('game_state')
+          .insert({
+            id: user.id, // Usar o user_id como chave primária
+            player_name: playerName,
+            player_mood: mood,
+            player_preference: preference,
+            echo_personality: personality,
+            echo_mood: 'neutro',
+            echo_sprite: 'blue'
+          });
+
+        if (error) throw error;
+      }
+
+      // Atualizar o store local
       setPlayerData({ name: playerName, mood, preference });
       setEchoPersonality(personality);
       

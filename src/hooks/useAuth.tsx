@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
+import { useEchoStore } from '@/store/echoStore';
 
 interface AuthContextProps {
   user: User | null;
@@ -21,22 +22,80 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { setPlayerData, setEchoPersonality, updateEchoMood, markEchoAsCreated, clearData } = useEchoStore();
+
+  // Função para carregar dados do Echo do Supabase
+  const loadEchoFromDatabase = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('game_state')
+        .select('*')
+        .eq('id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao carregar estado do jogo:', error);
+        return;
+      }
+
+      if (data) {
+        // Carregar dados do Echo do banco para o store
+        setPlayerData({
+          name: data.player_name,
+          mood: data.player_mood,
+          preference: data.player_preference
+        });
+        setEchoPersonality(data.echo_personality);
+        updateEchoMood(data.echo_mood);
+        markEchoAsCreated();
+        
+        console.log('Echo carregado do banco:', data);
+      } else {
+        console.log('Nenhum Echo encontrado no banco para este usuário');
+        // Limpar dados locais se não há Echo no banco
+        clearData();
+      }
+    } catch (error) {
+      console.error('Erro ao buscar estado do jogo:', error);
+    }
+  };
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+      
+      // Se há usuário, carregar dados do Echo
+      if (session?.user) {
+        await loadEchoFromDatabase(session.user.id);
+      }
+      
       setLoading(false);
     };
 
     getSession();
 
-    supabase.auth.onAuthStateChange((event, session: Session | null) => {
+    supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
       if (event === 'INITIAL_SESSION') {
         setUser(session?.user ?? null);
       } else {
         setUser(session?.user ?? null);
       }
+      
+      // Carregar dados do Echo quando usuário faz login
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        setTimeout(async () => {
+          await loadEchoFromDatabase(session.user.id);
+        }, 0);
+      }
+      
+      // Limpar dados quando usuário faz logout
+      if (event === 'SIGNED_OUT') {
+        clearData();
+      }
+      
       setLoading(false);
     });
   }, []);
