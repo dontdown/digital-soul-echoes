@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { GameScene, GameState } from './GameScene';
@@ -15,26 +14,23 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
   const sceneRef = useRef<GameScene | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Wrapper para onChatToggle que também gerencia o estado do Echo
+  // Wrapper mais simples para onChatToggle
   const wrappedChatToggle = (show: boolean) => {
     console.log('=== WRAPPER CHAT TOGGLE ===');
     console.log('Chat toggle recebido:', show);
-    console.log('Scene ref existe:', !!sceneRef.current);
     
+    // Primeiro chamar o callback do pai
     onChatToggle(show);
     
+    // Se está fechando o chat, garantir que a cena pare
     if (!show && sceneRef.current) {
-      console.log('Chat fechando - chamando stopChat na cena');
-      // Chamar stopChat imediatamente, sem delay
-      sceneRef.current.stopChat();
-      
-      // Garantir que o forceStopChat seja chamado também após um pequeno delay
+      console.log('Chat fechando - garantindo parada na cena');
+      // Pequeno delay para garantir que o React processou a mudança
       setTimeout(() => {
         if (sceneRef.current) {
-          console.log('Executando forceStopChat como backup');
           sceneRef.current.forceStopChat();
         }
-      }, 50);
+      }, 10);
     }
   };
 

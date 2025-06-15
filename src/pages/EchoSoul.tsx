@@ -85,14 +85,18 @@ const EchoSoul = () => {
   const handleChatToggle = useCallback((show: boolean) => {
     console.log('=== HANDLE CHAT TOGGLE ===');
     console.log('Toggle chat recebido:', show);
-    console.log('Estado atual do showChat:', showChat);
+    console.log('Estado atual do showChat antes da mudança:', showChat);
     
-    setShowChat(show);
-    
-    if (!show) {
-      console.log('Chat sendo fechado - showChat definido como false');
-    }
-  }, [showChat]);
+    // Só atualizar se realmente houver mudança
+    setShowChat(prevState => {
+      if (prevState !== show) {
+        console.log('Mudando showChat de', prevState, 'para', show);
+        return show;
+      }
+      console.log('Estado já é', show, '- não alterando');
+      return prevState;
+    });
+  }, []); // Remover dependência showChat
 
   if (!gameState) {
     return (
