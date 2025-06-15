@@ -48,6 +48,50 @@ interface UseModelDownloaderReturn {
   checkModelsIntegrity: () => Promise<boolean>;
 }
 
+const openDatabase = async (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('FaceAPIModels', 1);
+    
+    request.onerror = () => {
+      console.error('Erro ao abrir IndexedDB:', request.error);
+      reject(request.error);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      console.log('🔧 Atualizando estrutura do IndexedDB...');
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Verificar se o object store já existe antes de criar
+      if (!db.objectStoreNames.contains('models')) {
+        const store = db.createObjectStore('models');
+        console.log('✅ Object store "models" criado');
+      }
+    };
+    
+    request.onsuccess = () => {
+      const db = request.result;
+      console.log('✅ IndexedDB aberto com sucesso');
+      
+      // Verificar se o object store existe
+      if (!db.objectStoreNames.contains('models')) {
+        console.error('❌ Object store "models" não encontrado');
+        db.close();
+        
+        // Forçar recriação do banco
+        const deleteRequest = indexedDB.deleteDatabase('FaceAPIModels');
+        deleteRequest.onsuccess = () => {
+          console.log('🗑️ Banco deletado, tentando recriar...');
+          openDatabase().then(resolve).catch(reject);
+        };
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+        return;
+      }
+      
+      resolve(db);
+    };
+  });
+};
+
 export const useModelDownloader = (): UseModelDownloaderReturn => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -65,59 +109,54 @@ export const useModelDownloader = (): UseModelDownloaderReturn => {
   };
 
   const saveToIndexedDB = async (filename: string, blob: Blob): Promise<void> => {
+    const db = await openDatabase();
+    
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('FaceAPIModels', 1);
+      const transaction = db.transaction(['models'], 'readwrite');
+      const store = transaction.objectStore('models');
       
-      request.onerror = () => reject(request.error);
+      const request = store.put(blob, filename);
       
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains('models')) {
-          db.createObjectStore('models');
-        }
+      transaction.oncomplete = () => {
+        console.log(`💾 Salvo no IndexedDB: ${filename}`);
+        resolve();
       };
       
-      request.onsuccess = () => {
-        const db = request.result;
-        const transaction = db.transaction(['models'], 'readwrite');
-        const store = transaction.objectStore('models');
-        
-        store.put(blob, filename);
-        
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
+      transaction.onerror = () => {
+        console.error(`❌ Erro ao salvar ${filename}:`, transaction.error);
+        reject(transaction.error);
+      };
+      
+      request.onerror = () => {
+        console.error(`❌ Erro na requisição para ${filename}:`, request.error);
+        reject(request.error);
       };
     });
   };
 
   const loadFromIndexedDB = async (filename: string): Promise<Blob | null> => {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('FaceAPIModels', 1);
+    try {
+      const db = await openDatabase();
       
-      request.onerror = () => reject(request.error);
-      
-      request.onsuccess = () => {
-        const db = request.result;
+      return new Promise((resolve, reject) => {
         const transaction = db.transaction(['models'], 'readonly');
         const store = transaction.objectStore('models');
         
-        const getRequest = store.get(filename);
+        const request = store.get(filename);
         
-        getRequest.onsuccess = () => {
-          resolve(getRequest.result || null);
+        request.onsuccess = () => {
+          resolve(request.result || null);
         };
         
-        getRequest.onerror = () => reject(getRequest.error);
-      };
-    });
-  };
-
-  const createModelURL = async (filename: string): Promise<string> => {
-    const blob = await loadFromIndexedDB(filename);
-    if (blob) {
-      return URL.createObjectURL(blob);
+        request.onerror = () => {
+          console.error(`❌ Erro ao carregar ${filename}:`, request.error);
+          reject(request.error);
+        };
+      });
+    } catch (err) {
+      console.error(`❌ Erro ao acessar IndexedDB para ${filename}:`, err);
+      return null;
     }
-    throw new Error(`Modelo não encontrado: ${filename}`);
   };
 
   const checkModelsIntegrity = useCallback(async (): Promise<boolean> => {
@@ -205,13 +244,12 @@ export const useModelDownloader = (): UseModelDownloaderReturn => {
 export const createModelURLs = async (): Promise<Record<string, string>> => {
   const modelURLs: Record<string, string> = {};
   
-  for (const model of FACE_API_MODELS) {
-    try {
-      const request = indexedDB.open('FaceAPIModels', 1);
-      
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        request.onsuccess = () => {
-          const db = request.result;
+  try {
+    const db = await openDatabase();
+    
+    for (const model of FACE_API_MODELS) {
+      try {
+        const blob = await new Promise<Blob>((resolve, reject) => {
           const transaction = db.transaction(['models'], 'readonly');
           const store = transaction.objectStore('models');
           
@@ -224,14 +262,16 @@ export const createModelURLs = async (): Promise<Record<string, string>> => {
             }
           };
           getRequest.onerror = () => reject(getRequest.error);
-        };
-        request.onerror = () => reject(request.error);
-      });
-      
-      modelURLs[model.name] = URL.createObjectURL(blob);
-    } catch (err) {
-      console.error(`Erro ao criar URL para ${model.name}:`, err);
+        });
+        
+        modelURLs[model.name] = URL.createObjectURL(blob);
+        console.log(`🔗 URL criada para: ${model.name}`);
+      } catch (err) {
+        console.error(`❌ Erro ao criar URL para ${model.name}:`, err);
+      }
     }
+  } catch (err) {
+    console.error('❌ Erro ao acessar IndexedDB para criar URLs:', err);
   }
   
   return modelURLs;
