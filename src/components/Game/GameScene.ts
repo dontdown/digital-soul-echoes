@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private echoMoveTimer = 0;
   private isSceneReady = false;
   private proximityIndicator!: Phaser.GameObjects.Text;
+  private echoMovementTimer!: Phaser.Time.TimerEvent;
 
   constructor(gameState: GameState, onChatToggle: (show: boolean) => void, onMemoryTrigger: (memory: string) => void) {
     super({ key: 'GameScene' });
@@ -83,15 +84,24 @@ export class GameScene extends Phaser.Scene {
     });
     this.proximityIndicator.setVisible(false);
 
-    // Timer para movimento do Echo
-    this.time.addEvent({
+    // Timer para movimento do Echo com logs de debug
+    this.echoMovementTimer = this.time.addEvent({
       delay: 3000,
-      callback: this.updateEchoTarget,
+      callback: () => {
+        console.log('🎯 Atualizando target do Echo. Estado atual:', {
+          echoPosition: { x: this.echo.x, y: this.echo.y },
+          currentTarget: this.echoTarget,
+          isChatting: this.isChatting,
+          personality: this.gameState.echoPersonality
+        });
+        this.updateEchoTarget();
+      },
       callbackScope: this,
       loop: true
     });
 
     this.isSceneReady = true;
+    console.log('🎮 GameScene criada. Echo inicial em:', { x: this.echo.x, y: this.echo.y });
   }
 
   update() {
@@ -396,10 +406,28 @@ export class GameScene extends Phaser.Scene {
       this.echoTarget.x, this.echoTarget.y
     );
 
+    // Log de debug para movimento
     if (distance > 10) {
+      console.log('🏃 Echo se movendo para target:', {
+        from: { x: Math.round(this.echo.x), y: Math.round(this.echo.y) },
+        to: { x: this.echoTarget.x, y: this.echoTarget.y },
+        distance: Math.round(distance),
+        speed: echoSpeed
+      });
+      
       this.physics.moveToObject(this.echo, this.echoTarget, echoSpeed);
     } else {
+      // Echo chegou ao target
+      console.log('✅ Echo chegou ao target:', { x: this.echoTarget.x, y: this.echoTarget.y });
       this.echo.setVelocity(0);
+      
+      // Gerar novo target após um pequeno delay se não estiver conversando
+      if (!this.isChatting) {
+        this.time.delayedCall(1000, () => {
+          console.log('🔄 Gerando novo target para o Echo...');
+          this.updateEchoTarget();
+        });
+      }
     }
   }
 
@@ -450,6 +478,12 @@ export class GameScene extends Phaser.Scene {
       console.log('Teclas globais REABILITADAS');
     }
     
+    // Garantir que o Echo volte a se mover após parar o chat
+    this.time.delayedCall(500, () => {
+      console.log('🔄 Reativando movimento do Echo após chat');
+      this.updateEchoTarget();
+    });
+    
     console.log('Estado após parar: isChatting =', this.isChatting);
     console.log('=== MOVIMENTO LIBERADO ===');
   }
@@ -472,10 +506,11 @@ export class GameScene extends Phaser.Scene {
 
   private updateEchoTarget() {
     const personality = this.gameState.echoPersonality;
+    const oldTarget = { ...this.echoTarget };
     
     if (personality === 'extrovertido') {
-      this.echoTarget.x = this.player.x + Phaser.Math.Between(-50, 50);
-      this.echoTarget.y = this.player.y + Phaser.Math.Between(-50, 50);
+      this.echoTarget.x = this.player.x + Phaser.Math.Between(-100, 100);
+      this.echoTarget.y = this.player.y + Phaser.Math.Between(-100, 100);
     } else if (personality === 'calmo') {
       this.echoTarget.x = Phaser.Math.Between(100, 700);
       this.echoTarget.y = Phaser.Math.Between(100, 500);
@@ -483,16 +518,28 @@ export class GameScene extends Phaser.Scene {
       const avoidPlayer = Math.random() > 0.5;
       if (avoidPlayer) {
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.echo.x, this.echo.y);
-        this.echoTarget.x = this.echo.x + Math.cos(angle) * 100;
-        this.echoTarget.y = this.echo.y + Math.sin(angle) * 100;
+        this.echoTarget.x = this.echo.x + Math.cos(angle) * 150;
+        this.echoTarget.y = this.echo.y + Math.sin(angle) * 150;
       } else {
         this.echoTarget.x = Phaser.Math.Between(100, 700);
         this.echoTarget.y = Phaser.Math.Between(100, 500);
       }
+    } else {
+      // Personalidade padrão
+      this.echoTarget.x = Phaser.Math.Between(150, 650);
+      this.echoTarget.y = Phaser.Math.Between(150, 450);
     }
 
+    // Garantir que o target está dentro dos limites
     this.echoTarget.x = Phaser.Math.Clamp(this.echoTarget.x, 50, 750);
     this.echoTarget.y = Phaser.Math.Clamp(this.echoTarget.y, 50, 550);
+
+    console.log('🎯 Novo target do Echo gerado:', {
+      personality,
+      oldTarget,
+      newTarget: this.echoTarget,
+      currentPosition: { x: Math.round(this.echo.x), y: Math.round(this.echo.y) }
+    });
   }
 
   private getEchoColor(): number {
@@ -556,7 +603,29 @@ export class GameScene extends Phaser.Scene {
       console.log('Teclas globais FORÇADAMENTE REABILITADAS');
     }
     
+    // Garantir que o Echo volte a se mover
+    this.time.delayedCall(300, () => {
+      console.log('🔄 Forçando reativação do movimento do Echo');
+      this.updateEchoTarget();
+    });
+    
     console.log('Estado após força: isChatting =', this.isChatting);
     console.log('=== MOVIMENTO FORÇADAMENTE LIBERADO ===');
+  }
+
+  // Método para debug manual do Echo
+  public debugEchoMovement() {
+    console.log('🔍 DEBUG ECHO MOVEMENT:', {
+      position: { x: Math.round(this.echo.x), y: Math.round(this.echo.y) },
+      target: this.echoTarget,
+      velocity: { x: this.echo.body?.velocity.x, y: this.echo.body?.velocity.y },
+      isChatting: this.isChatting,
+      personality: this.gameState.echoPersonality,
+      speed: this.getEchoSpeed(),
+      isSceneReady: this.isSceneReady
+    });
+    
+    // Forçar novo target
+    this.updateEchoTarget();
   }
 }
