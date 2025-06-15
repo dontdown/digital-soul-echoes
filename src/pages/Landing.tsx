@@ -21,10 +21,12 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate("/auth");
+    console.log("Navegando para /create-echo");
+    navigate("/create-echo");
   };
 
   const handleLogin = () => {
+    console.log("Navegando para /auth");
     navigate("/auth");
   };
 
@@ -136,7 +138,7 @@ const Landing = () => {
         <Button 
           onClick={handleLogin}
           variant="outline"
-          className="text-white border-white hover:bg-white hover:text-slate-900"
+          className="text-white border-white hover:bg-white hover:text-slate-900 transition-colors"
         >
           Entrar
         </Button>
@@ -193,7 +195,7 @@ const Landing = () => {
             <Button
               onClick={handleLearnMore}
               variant="outline"
-              className="text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full"
+              className="text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full transition-colors"
             >
               Saiba mais
             </Button>
