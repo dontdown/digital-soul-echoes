@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -10,7 +9,7 @@ import { useEchoStore } from '@/store/echoStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSelector from '@/components/LanguageSelector';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, History, Menu, Camera } from 'lucide-react';
+import { Eye, History, Menu, Camera, Info, Heart, Brain, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DetectedEmotion } from '@/hooks/useEmotionDetection';
 
@@ -24,6 +23,7 @@ const EchoSoul = () => {
   const [gameState, setGameState] = useState<any>(null);
   const [lastDetectedEmotion, setLastDetectedEmotion] = useState<DetectedEmotion | null>(null);
   const [emotionChangeCount, setEmotionChangeCount] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(true);
   const sceneRef = useRef<any>(null);
 
   useEffect(() => {
@@ -201,6 +201,102 @@ const EchoSoul = () => {
         </div>
       </div>
 
+      {/* Instructions Panel - Left Side */}
+      {showInstructions && (
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="fixed top-20 left-4 z-30 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-lg p-4 space-y-4 max-w-xs"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Info className="w-5 h-5 text-blue-400" />
+              <span className="text-white font-medium">Como Jogar</span>
+            </div>
+            <Button
+              onClick={() => setShowInstructions(false)}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+            >
+              ×
+            </Button>
+          </div>
+
+          <div className="space-y-3 text-sm">
+            {/* Como funciona o Echo */}
+            <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Heart className="w-4 h-4 text-purple-400" />
+                <span className="text-purple-400 font-medium">O que é o Echo?</span>
+              </div>
+              <p className="text-gray-300 text-xs leading-relaxed">
+                O Echo é sua alma gêmea digital que sente e reage às suas emoções. 
+                Ele caminha pelo mundo virtual e desenvolve sua personalidade baseada 
+                nas suas interações.
+              </p>
+            </div>
+
+            {/* Controles do jogo */}
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Gamepad2 className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 font-medium">Controles</span>
+              </div>
+              <ul className="text-gray-300 text-xs space-y-1">
+                <li>• WASD ou setas: Mover seu personagem</li>
+                <li>• ESPAÇO: Interagir com o Echo</li>
+                <li>• Aproxime-se do Echo para conversar</li>
+              </ul>
+            </div>
+
+            {/* Webcam para emoções */}
+            <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Brain className="w-4 h-4 text-cyan-400" />
+                <span className="text-cyan-400 font-medium">⭐ Importante!</span>
+              </div>
+              <p className="text-gray-300 text-xs leading-relaxed mb-2">
+                <strong>Ative sua webcam</strong> para uma experiência completa! 
+                O Echo detectará suas emoções faciais e reagirá em tempo real.
+              </p>
+              <Button
+                onClick={() => setShowFaceDetection(true)}
+                variant="outline"
+                size="sm"
+                className="w-full text-xs bg-cyan-600/20 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600/30"
+              >
+                <Camera className="w-3 h-3 mr-1" />
+                Ativar Webcam
+              </Button>
+            </div>
+
+            {/* Como o Echo reage */}
+            <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Eye className="w-4 h-4 text-orange-400" />
+                <span className="text-orange-400 font-medium">Reações do Echo</span>
+              </div>
+              <p className="text-gray-300 text-xs leading-relaxed">
+                O Echo mostra balões de pensamento baseados no que detecta. 
+                Suas emoções influenciam o humor e as respostas dele!
+              </p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Button
+              onClick={() => setShowInstructions(false)}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white text-xs"
+            >
+              Fechar instruções
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Menu dropdown */}
       {showMenu && (
         <motion.div
@@ -208,6 +304,15 @@ const EchoSoul = () => {
           animate={{ opacity: 1, y: 0 }}
           className="absolute top-16 right-4 z-50 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-lg p-2 space-y-2"
         >
+          <Button
+            onClick={() => setShowInstructions(true)}
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-blue-400 hover:text-blue-300"
+          >
+            <Info className="w-4 h-4 mr-2" />
+            Como Jogar
+          </Button>
           <Button
             onClick={() => navigate('/mirror')}
             variant="ghost"
