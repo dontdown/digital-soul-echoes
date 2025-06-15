@@ -211,7 +211,7 @@ const EchoSoul = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Info className="w-5 h-5 text-blue-400" />
-              <span className="text-white font-medium">Como Jogar</span>
+              <span className="text-white font-medium">{t('instructions.howToPlay')}</span>
             </div>
             <Button
               onClick={() => setShowInstructions(false)}
@@ -228,12 +228,10 @@ const EchoSoul = () => {
             <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <Heart className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-400 font-medium">O que é o Echo?</span>
+                <span className="text-purple-400 font-medium">{t('instructions.whatIsEcho')}</span>
               </div>
               <p className="text-gray-300 text-xs leading-relaxed">
-                O Echo é sua alma gêmea digital que sente e reage às suas emoções. 
-                Ele caminha pelo mundo virtual e desenvolve sua personalidade baseada 
-                nas suas interações.
+                {t('instructions.echoDescription')}
               </p>
             </div>
 
@@ -241,12 +239,12 @@ const EchoSoul = () => {
             <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <Gamepad2 className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 font-medium">Controles</span>
+                <span className="text-green-400 font-medium">{t('instructions.controls')}</span>
               </div>
               <ul className="text-gray-300 text-xs space-y-1">
-                <li>• WASD ou setas: Mover seu personagem</li>
-                <li>• ESPAÇO: Interagir com o Echo</li>
-                <li>• Aproxime-se do Echo para conversar</li>
+                <li>{t('instructions.controlsDesc1')}</li>
+                <li>{t('instructions.controlsDesc2')}</li>
+                <li>{t('instructions.controlsDesc3')}</li>
               </ul>
             </div>
 
@@ -254,11 +252,10 @@ const EchoSoul = () => {
             <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <Brain className="w-4 h-4 text-cyan-400" />
-                <span className="text-cyan-400 font-medium">⭐ Importante!</span>
+                <span className="text-cyan-400 font-medium">{t('instructions.important')}</span>
               </div>
               <p className="text-gray-300 text-xs leading-relaxed mb-2">
-                <strong>Ative sua webcam</strong> para uma experiência completa! 
-                O Echo detectará suas emoções faciais e reagirá em tempo real.
+                {t('instructions.webcamDesc')}
               </p>
               <Button
                 onClick={() => setShowFaceDetection(true)}
@@ -267,7 +264,7 @@ const EchoSoul = () => {
                 className="w-full text-xs bg-cyan-600/20 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600/30"
               >
                 <Camera className="w-3 h-3 mr-1" />
-                Ativar Webcam
+                {t('instructions.activateWebcam')}
               </Button>
             </div>
 
@@ -275,11 +272,10 @@ const EchoSoul = () => {
             <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <Eye className="w-4 h-4 text-orange-400" />
-                <span className="text-orange-400 font-medium">Reações do Echo</span>
+                <span className="text-orange-400 font-medium">{t('instructions.echoReactions')}</span>
               </div>
               <p className="text-gray-300 text-xs leading-relaxed">
-                O Echo mostra balões de pensamento baseados no que detecta. 
-                Suas emoções influenciam o humor e as respostas dele!
+                {t('instructions.reactionsDesc')}
               </p>
             </div>
           </div>
@@ -291,7 +287,7 @@ const EchoSoul = () => {
               size="sm"
               className="text-gray-400 hover:text-white text-xs"
             >
-              Fechar instruções
+              {t('instructions.closeInstructions')}
             </Button>
           </div>
         </motion.div>
@@ -311,7 +307,7 @@ const EchoSoul = () => {
             className="w-full justify-start text-blue-400 hover:text-blue-300"
           >
             <Info className="w-4 h-4 mr-2" />
-            Como Jogar
+            {t('instructions.howToPlay')}
           </Button>
           <Button
             onClick={() => navigate('/mirror')}

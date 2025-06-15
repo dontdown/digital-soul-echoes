@@ -125,6 +125,21 @@ const ptTranslations: Record<string, string> = {
   'game.faceDetection': 'Echo está observando suas expressões e reagindo a elas!',
   'game.echoSees': 'Echo observa:',
   
+  // Game Instructions
+  'instructions.howToPlay': 'Como Jogar',
+  'instructions.whatIsEcho': 'O que é o Echo?',
+  'instructions.echoDescription': 'O Echo é sua alma gêmea digital que sente e reage às suas emoções. Ele caminha pelo mundo virtual e desenvolve sua personalidade baseada nas suas interações.',
+  'instructions.controls': 'Controles',
+  'instructions.controlsDesc1': '• WASD ou setas: Mover seu personagem',
+  'instructions.controlsDesc2': '• ESPAÇO: Interagir com o Echo',
+  'instructions.controlsDesc3': '• Aproxime-se do Echo para conversar',
+  'instructions.important': '⭐ Importante!',
+  'instructions.webcamDesc': 'Ative sua webcam para uma experiência completa! O Echo detectará suas emoções faciais e reagirá em tempo real.',
+  'instructions.activateWebcam': 'Ativar Webcam',
+  'instructions.echoReactions': 'Reações do Echo',
+  'instructions.reactionsDesc': 'O Echo mostra balões de pensamento baseados no que detecta. Suas emoções influenciam o humor e as respostas dele!',
+  'instructions.closeInstructions': 'Fechar instruções',
+  
   // Common
   'common.name': 'Nome',
   'common.personality': 'Personalidade',
@@ -211,6 +226,21 @@ const enTranslations: Record<string, string> = {
   'game.instructions': 'Use WASD or arrow keys to move. Press E near Echo to chat.',
   'game.faceDetection': 'Echo is watching your expressions and reacting to them!',
   'game.echoSees': 'Echo sees:',
+  
+  // Game Instructions
+  'instructions.howToPlay': 'How to Play',
+  'instructions.whatIsEcho': 'What is Echo?',
+  'instructions.echoDescription': 'Echo is your digital soulmate that feels and reacts to your emotions. It walks through the virtual world and develops its personality based on your interactions.',
+  'instructions.controls': 'Controls',
+  'instructions.controlsDesc1': '• WASD or arrows: Move your character',
+  'instructions.controlsDesc2': '• SPACE: Interact with Echo',
+  'instructions.controlsDesc3': '• Get close to Echo to chat',
+  'instructions.important': '⭐ Important!',
+  'instructions.webcamDesc': 'Activate your webcam for a complete experience! Echo will detect your facial emotions and react in real time.',
+  'instructions.activateWebcam': 'Activate Webcam',
+  'instructions.echoReactions': 'Echo Reactions',
+  'instructions.reactionsDesc': 'Echo shows thought bubbles based on what it detects. Your emotions influence its mood and responses!',
+  'instructions.closeInstructions': 'Close instructions',
   
   // Common
   'common.name': 'Name',
