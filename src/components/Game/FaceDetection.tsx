@@ -1,10 +1,10 @@
+
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useEmotionDetection, EmotionModel, DetectedEmotion } from '@/hooks/useEmotionDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Play, Settings } from 'lucide-react';
-import { toast } from 'sonner';
+import { Camera, CameraOff, Eye, AlertCircle, Settings } from 'lucide-react';
 
 interface FaceDetectionProps {
   onEmotionDetected: (emotion: DetectedEmotion) => void;
@@ -71,11 +71,8 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         if (!isModelLoaded) {
           await loadModels();
         }
-        
-        toast.success('Detecção ativada! Performance otimizada', { duration: 2000 });
       } catch (err) {
         console.error('💥 Erro ao ativar detecção:', err);
-        toast.error('Erro ao ativar detecção');
         setIsEnabled(false);
       }
     } else {
@@ -83,7 +80,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
-      toast.info('Detecção desativada');
     }
   }, [isEnabled, startWebcam, loadModels, isModelLoaded, stopWebcam, stopDetection]);
 
@@ -117,7 +113,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     };
   }, [currentEmotion]);
 
-  // Auto-iniciar detecção estável
+  // Auto-iniciar detecção estável - SEM NOTIFICAÇÕES
   useEffect(() => {    
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
       console.log('🎬 FaceDetection: Auto-iniciando detecção ESTÁVEL...');
@@ -129,9 +125,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
           console.log('✅ FaceDetection: Iniciando detecção ESTÁVEL...');
           startDetection(videoRef.current);
-          toast.success(`${currentModel} ESTÁVEL iniciado! 1.5 FPS`, {
-            duration: 1500
-          });
         }
       }, 500);
     }
@@ -154,7 +147,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             <span className="text-white font-medium text-sm">
               Detecção Estável
             </span>
-            {!isSimulated && <Play className="w-3 h-3 text-green-400" />}
           </div>
           <div className="flex items-center space-x-1">
             <Button
@@ -194,7 +186,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 onClick={() => {
                   switchModel(model.id);
                   setShowModelSelector(false);
-                  toast.info(`Modelo: ${model.name}`, { duration: 1500 });
                 }}
               >
                 <div className="flex justify-between items-center">
@@ -212,7 +203,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {currentModel === 'mediapipe' ? (
             <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-2">
               <div className="text-green-400 text-sm font-medium">
-                🤖 MediaPipe Estável (1.5 FPS)
+                🤖 MediaPipe Silencioso
               </div>
             </div>
           ) : currentModel === 'tensorflow' ? (
@@ -252,7 +243,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             <div className="bg-slate-700/50 rounded-lg p-2">
               <div className="flex items-center justify-between">
                 <span className="text-gray-300 text-xs">
-                  {isSimulated ? 'Demo:' : 'Estável:'}
+                  {isSimulated ? 'Demo:' : 'Observando:'}
                 </span>
                 <span className="text-lg">{emotionDisplay.emoji}</span>
               </div>
@@ -272,10 +263,10 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 </div>
               )}
               
-              {/* Indicador de estabilidade */}
+              {/* Indicador de funcionamento silencioso */}
               {currentModel === 'mediapipe' && isDetecting && (
                 <div className="text-xs text-blue-400 mt-1">
-                  🎯 Modo Estável Ativo
+                  🔇 Modo Silencioso
                 </div>
               )}
             </div>
@@ -309,7 +300,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🎯 Estável (1.5 FPS) - Mantenha a expressão por alguns segundos
+          🔇 Detecção silenciosa - Echo observa discretamente
         </div>
       </motion.div>
     </AnimatePresence>
