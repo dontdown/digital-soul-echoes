@@ -37,39 +37,42 @@ export class CharacterSprites {
   }
 
   static createWalkingSprites(scene: Phaser.Scene, modelType: string, colors: any) {
-    const frameWidth = 20;
-    const frameHeight = 30;
+    const frameWidth = 32;
+    const frameHeight = 32;
     const frames = 4;
 
-    // Criar uma textura com múltiplos frames para animação
-    const graphics = scene.add.graphics();
-    
+    // Criar canvas para a texture
+    const canvas = scene.textures.createCanvas(`player_${modelType}_walk`, frameWidth * frames, frameHeight);
+    const context = canvas.getContext();
+
+    // Desenhar cada frame da animação
     for (let frame = 0; frame < frames; frame++) {
       const offsetX = frame * frameWidth;
       
-      // Frame base (parado)
       if (frame === 0) {
-        this.drawCharacterFrame(graphics, offsetX, 0, colors, 'idle');
-      }
-      // Frame 1 - pé esquerdo para frente
-      else if (frame === 1) {
-        this.drawCharacterFrame(graphics, offsetX, 0, colors, 'left-step');
-      }
-      // Frame 2 - posição neutra
-      else if (frame === 2) {
-        this.drawCharacterFrame(graphics, offsetX, 0, colors, 'idle');
-      }
-      // Frame 3 - pé direito para frente
-      else if (frame === 3) {
-        this.drawCharacterFrame(graphics, offsetX, 0, colors, 'right-step');
+        // Frame parado
+        this.drawCharacterOnCanvas(context, offsetX, 0, frameWidth, frameHeight, colors, 'idle');
+      } else if (frame === 1) {
+        // Pé esquerdo para frente
+        this.drawCharacterOnCanvas(context, offsetX, 0, frameWidth, frameHeight, colors, 'left-step');
+      } else if (frame === 2) {
+        // Frame parado novamente
+        this.drawCharacterOnCanvas(context, offsetX, 0, frameWidth, frameHeight, colors, 'idle');
+      } else if (frame === 3) {
+        // Pé direito para frente
+        this.drawCharacterOnCanvas(context, offsetX, 0, frameWidth, frameHeight, colors, 'right-step');
       }
     }
 
-    graphics.generateTexture(`player_${modelType}_walk`, frameWidth * frames, frameHeight);
-    graphics.destroy();
+    canvas.refresh();
   }
 
-  static drawCharacterFrame(graphics: Phaser.GameObjects.Graphics, offsetX: number, offsetY: number, colors: any, pose: string) {
+  static drawCharacterOnCanvas(context: CanvasRenderingContext2D, offsetX: number, offsetY: number, frameWidth: number, frameHeight: number, colors: any, pose: string) {
+    // Centralizar o personagem no frame
+    const centerX = offsetX + frameWidth / 2;
+    const centerY = offsetY + frameHeight / 2;
+    const scale = 1;
+
     // Ajustes de posição baseados no pose
     let leftLegOffset = 0;
     let rightLegOffset = 0;
@@ -77,43 +80,45 @@ export class CharacterSprites {
     let rightArmOffset = 0;
 
     if (pose === 'left-step') {
-      leftLegOffset = -1;
+      leftLegOffset = -2;
       rightArmOffset = 1;
     } else if (pose === 'right-step') {
-      rightLegOffset = -1;
+      rightLegOffset = -2;
       leftArmOffset = 1;
     }
 
+    // Função helper para desenhar retângulos
+    const drawRect = (x: number, y: number, w: number, h: number, color: number) => {
+      context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+      context.fillRect(centerX + x - frameWidth/2, centerY + y - frameHeight/2, w * scale, h * scale);
+    };
+
+    // Limpar o frame
+    context.clearRect(offsetX, offsetY, frameWidth, frameHeight);
+
     // Cabeça
-    graphics.fillStyle(colors.skin);
-    graphics.fillRect(offsetX + 6, offsetY + 2, 8, 6);
+    drawRect(-4, -12, 8, 6, colors.skin);
 
     // Cabelo
-    graphics.fillStyle(colors.hair);
-    graphics.fillRect(offsetX + 4, offsetY + 0, 12, 4);
+    drawRect(-6, -16, 12, 4, colors.hair);
 
     // Torso
-    graphics.fillStyle(colors.shirt);
-    graphics.fillRect(offsetX + 4, offsetY + 8, 12, 8);
+    drawRect(-6, -6, 12, 8, colors.shirt);
 
     // Calça (parte superior)
-    graphics.fillStyle(colors.pants);
-    graphics.fillRect(offsetX + 5, offsetY + 16, 10, 6);
+    drawRect(-5, 2, 10, 6, colors.pants);
 
     // Braços com movimento
-    graphics.fillStyle(colors.skin);
-    graphics.fillRect(offsetX + 2, offsetY + 10 + leftArmOffset, 3, 6); // braço esquerdo
-    graphics.fillRect(offsetX + 15, offsetY + 10 + rightArmOffset, 3, 6); // braço direito
+    drawRect(-8, -4 + leftArmOffset, 3, 6, colors.skin); // braço esquerdo
+    drawRect(5, -4 + rightArmOffset, 3, 6, colors.skin); // braço direito
 
     // Pernas com movimento
-    graphics.fillStyle(colors.pants);
-    graphics.fillRect(offsetX + 6, offsetY + 22 + leftLegOffset, 3, 6); // perna esquerda
-    graphics.fillRect(offsetX + 11, offsetY + 22 + rightLegOffset, 3, 6); // perna direita
+    drawRect(-3, 8 + leftLegOffset, 3, 6, colors.pants); // perna esquerda
+    drawRect(0, 8 + rightLegOffset, 3, 6, colors.pants); // perna direita
 
     // Pés
-    graphics.fillStyle(0x654321);
-    graphics.fillRect(offsetX + 5, offsetY + 28 + leftLegOffset, 4, 2); // pé esquerdo
-    graphics.fillRect(offsetX + 11, offsetY + 28 + rightLegOffset, 4, 2); // pé direito
+    drawRect(-4, 14 + leftLegOffset, 4, 2, 0x654321); // pé esquerdo
+    drawRect(0, 14 + rightLegOffset, 4, 2, 0x654321); // pé direito
   }
 
   static createEchoSprite(scene: Phaser.Scene, mood: string) {
@@ -180,32 +185,36 @@ export class CharacterSprites {
         break;
     }
 
+    // Centralizar no canvas
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
     // Desenhar o sprite pixel por pixel (frame parado)
     ctx.fillStyle = colors.skin;
-    ctx.fillRect(6 * scale, 2 * scale, 8 * scale, 6 * scale); // cabeça
+    ctx.fillRect(centerX - 4 * scale, centerY - 12 * scale, 8 * scale, 6 * scale); // cabeça
 
     ctx.fillStyle = colors.hair;
-    ctx.fillRect(4 * scale, 0 * scale, 12 * scale, 4 * scale); // cabelo
+    ctx.fillRect(centerX - 6 * scale, centerY - 16 * scale, 12 * scale, 4 * scale); // cabelo
 
     ctx.fillStyle = colors.shirt;
-    ctx.fillRect(4 * scale, 8 * scale, 12 * scale, 8 * scale); // torso
+    ctx.fillRect(centerX - 6 * scale, centerY - 6 * scale, 12 * scale, 8 * scale); // torso
 
     ctx.fillStyle = colors.pants;
-    ctx.fillRect(5 * scale, 16 * scale, 10 * scale, 6 * scale); // calça
+    ctx.fillRect(centerX - 5 * scale, centerY + 2 * scale, 10 * scale, 6 * scale); // calça
 
     // Braços
     ctx.fillStyle = colors.skin;
-    ctx.fillRect(2 * scale, 10 * scale, 3 * scale, 6 * scale); // braço esquerdo
-    ctx.fillRect(15 * scale, 10 * scale, 3 * scale, 6 * scale); // braço direito
+    ctx.fillRect(centerX - 8 * scale, centerY - 4 * scale, 3 * scale, 6 * scale); // braço esquerdo
+    ctx.fillRect(centerX + 5 * scale, centerY - 4 * scale, 3 * scale, 6 * scale); // braço direito
 
     // Pernas
     ctx.fillStyle = colors.pants;
-    ctx.fillRect(6 * scale, 22 * scale, 3 * scale, 6 * scale); // perna esquerda
-    ctx.fillRect(11 * scale, 22 * scale, 3 * scale, 6 * scale); // perna direita
+    ctx.fillRect(centerX - 3 * scale, centerY + 8 * scale, 3 * scale, 6 * scale); // perna esquerda
+    ctx.fillRect(centerX, centerY + 8 * scale, 3 * scale, 6 * scale); // perna direita
 
     // Pés
     ctx.fillStyle = '#654321';
-    ctx.fillRect(5 * scale, 28 * scale, 4 * scale, 2 * scale); // pé esquerdo
-    ctx.fillRect(11 * scale, 28 * scale, 4 * scale, 2 * scale); // pé direito
+    ctx.fillRect(centerX - 4 * scale, centerY + 14 * scale, 4 * scale, 2 * scale); // pé esquerdo
+    ctx.fillRect(centerX, centerY + 14 * scale, 4 * scale, 2 * scale); // pé direito
   }
 }
