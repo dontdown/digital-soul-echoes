@@ -36,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    console.log('Preloading sprites for player model:', this.gameState.playerModel, 'and echo mood:', this.gameState.echoMood);
+    
     // Criar apenas os sprites necessários
     CharacterSprites.createPlayerSprite(this, this.gameState.playerModel);
     CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
@@ -62,22 +64,32 @@ export class GameScene extends Phaser.Scene {
 
     // Criar jogador com o modelo escolhido
     const playerTexture = `player_${this.gameState.playerModel}_frames`;
+    console.log('Looking for player texture:', playerTexture);
+    
     if (this.textures.exists(playerTexture)) {
       this.player = this.physics.add.sprite(100, 300, playerTexture, 0);
       this.player.setCollideWorldBounds(true);
       this.player.setScale(4);
+      console.log('Player sprite created successfully');
     } else {
       console.error('Player texture not found:', playerTexture);
+      // Create a simple fallback sprite
+      this.createFallbackPlayer();
     }
 
     // Criar Echo
     const echoTexture = `echo_${this.gameState.echoMood}_frames`;
+    console.log('Looking for echo texture:', echoTexture);
+    
     if (this.textures.exists(echoTexture)) {
       this.echo = this.physics.add.sprite(400, 300, echoTexture, 0);
       this.echo.setCollideWorldBounds(true);
       this.echo.setScale(4);
+      console.log('Echo sprite created successfully');
     } else {
       console.error('Echo texture not found:', echoTexture);
+      // Create a simple fallback sprite
+      this.createFallbackEcho();
     }
 
     // Configurar física
@@ -169,6 +181,8 @@ export class GameScene extends Phaser.Scene {
           frameRate: 1
         });
       }
+    } else {
+      console.log('Player texture not available for animations, using fallback');
     }
 
     const echoKey = `echo_${this.gameState.echoMood}_frames`;
@@ -189,6 +203,8 @@ export class GameScene extends Phaser.Scene {
           frameRate: 1
         });
       }
+    } else {
+      console.log('Echo texture not available for animations, using fallback');
     }
   }
 
@@ -196,7 +212,10 @@ export class GameScene extends Phaser.Scene {
     if (this.isChatting || !this.player) {
       if (this.player) {
         this.player.setVelocity(0);
-        this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
+        // Only play animation if it exists
+        if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
+          this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
+        }
       }
       return;
     }
@@ -225,9 +244,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (isMoving) {
-      this.player.anims.play(`${this.gameState.playerModel}_walk`, true);
+      if (this.anims.exists(`${this.gameState.playerModel}_walk`)) {
+        this.player.anims.play(`${this.gameState.playerModel}_walk`, true);
+      }
     } else {
-      this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
+      if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
+        this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
+      }
     }
   }
 
@@ -235,7 +258,9 @@ export class GameScene extends Phaser.Scene {
     if (this.isChatting || !this.echo) {
       if (this.echo) {
         this.echo.setVelocity(0);
-        this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
+        if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
+          this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
+        }
       }
       return;
     }
@@ -248,10 +273,14 @@ export class GameScene extends Phaser.Scene {
 
     if (distance > 10) {
       this.physics.moveToObject(this.echo, this.echoTarget, echoSpeed);
-      this.echo.anims.play(`echo_${this.gameState.echoMood}_walk`, true);
+      if (this.anims.exists(`echo_${this.gameState.echoMood}_walk`)) {
+        this.echo.anims.play(`echo_${this.gameState.echoMood}_walk`, true);
+      }
     } else {
       this.echo.setVelocity(0);
-      this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
+      if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
+        this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
+      }
     }
   }
 
@@ -367,7 +396,9 @@ export class GameScene extends Phaser.Scene {
       // Recriar animações para o novo mood
       this.createAnimations();
       
-      this.echo.anims.play(`echo_${newMood}_idle`, true);
+      if (this.anims.exists(`echo_${newMood}_idle`)) {
+        this.echo.anims.play(`echo_${newMood}_idle`, true);
+      }
     }
   }
 
@@ -384,5 +415,31 @@ export class GameScene extends Phaser.Scene {
     if (this.input.keyboard) {
       this.input.keyboard.enableGlobalCapture();
     }
+  }
+
+  private createFallbackPlayer() {
+    // Create a simple colored rectangle as fallback
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0xd2691e);
+    graphics.fillRect(0, 0, 32, 32);
+    graphics.generateTexture('fallback_player', 32, 32);
+    
+    this.player = this.physics.add.sprite(100, 300, 'fallback_player');
+    this.player.setCollideWorldBounds(true);
+    this.player.setScale(4);
+    console.log('Created fallback player sprite');
+  }
+
+  private createFallbackEcho() {
+    // Create a simple colored rectangle as fallback
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x9370db);
+    graphics.fillRect(0, 0, 32, 32);
+    graphics.generateTexture('fallback_echo', 32, 32);
+    
+    this.echo = this.physics.add.sprite(400, 300, 'fallback_echo');
+    this.echo.setCollideWorldBounds(true);
+    this.echo.setScale(4);
+    console.log('Created fallback echo sprite');
   }
 }

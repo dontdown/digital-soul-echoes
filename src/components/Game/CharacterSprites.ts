@@ -1,4 +1,3 @@
-
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -36,56 +35,47 @@ export class CharacterSprites {
   static createWalkingSprites(scene: Phaser.Scene, spriteKey: string, colors: any) {
     const frameWidth = 32;
     const frameHeight = 32;
-    const atlasKey = `${spriteKey}_atlas`;
     const framesKey = `${spriteKey}_frames`;
 
-    // Check if textures already exist and remove them
-    if (scene.textures.exists(atlasKey)) {
-      scene.textures.remove(atlasKey);
-    }
+    console.log('Creating walking sprites for:', spriteKey);
+
+    // Remove existing textures if they exist
     if (scene.textures.exists(framesKey)) {
       scene.textures.remove(framesKey);
+      console.log('Removed existing texture:', framesKey);
     }
 
-    // Criar um canvas para o atlas completo
-    const atlasCanvas = scene.textures.createCanvas(atlasKey, frameWidth * 4, frameHeight);
+    // Create a canvas element
+    const canvas = document.createElement('canvas');
+    canvas.width = frameWidth * 4;
+    canvas.height = frameHeight;
     
-    // Verificar se o canvas foi criado corretamente
-    if (!atlasCanvas) {
-      console.error('Failed to create canvas texture:', atlasKey);
-      return;
-    }
-
-    const atlasContext = atlasCanvas.getContext();
-    
-    // Verificar se o contexto foi obtido corretamente
-    if (!atlasContext) {
-      console.error('Failed to get canvas context for:', atlasKey);
+    const context = canvas.getContext('2d');
+    if (!context) {
+      console.error('Failed to get canvas context for:', framesKey);
       return;
     }
     
-    // Limpar o canvas
-    atlasContext.clearRect(0, 0, frameWidth * 4, frameHeight);
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Criar 4 frames da animação
+    // Create 4 frames of animation
     const poses = ['idle', 'left-step', 'idle', 'right-step'];
     
     poses.forEach((pose, index) => {
-      // Desenhar cada frame diretamente no atlas
-      this.drawCharacterOnCanvas(atlasContext, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
+      this.drawCharacterOnCanvas(context, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
     });
 
-    atlasCanvas.refresh();
-
-    // Configurar o atlas no Phaser com frames nomeados - usar a textura canvas diretamente
+    // Create texture from canvas and add sprite sheet
     try {
-      const canvasTexture = scene.textures.get(atlasKey);
-      scene.textures.addSpriteSheet(framesKey, canvasTexture, {
+      const texture = scene.textures.addSpriteSheet(framesKey, canvas, {
         frameWidth: frameWidth,
         frameHeight: frameHeight
       });
+      
+      console.log('Successfully created texture:', framesKey, texture);
     } catch (error) {
-      console.error('Error creating sprite sheet:', error);
+      console.error('Error creating sprite sheet:', framesKey, error);
     }
   }
 
@@ -146,6 +136,7 @@ export class CharacterSprites {
       case 'raiva': return 0xdc143c; // vermelho
       case 'calmo': return 0x32cd32; // verde
       case 'misterioso': return 0x8a2be2; // roxo
+      case 'neutro': return 0x9370db; // roxo médio
       default: return 0x9370db; // roxo médio padrão
     }
   }
