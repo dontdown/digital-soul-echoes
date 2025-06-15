@@ -1,8 +1,10 @@
+
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
-import { useEmotionDetection, EmotionModel, DetectedEmotion } from '@/hooks/useEmotionDetection';
+import { useEmotionDetection, EmotionModel } from '@/hooks/useEmotionDetection';
+import { DetectedEmotion } from '@/hooks/useFaceDetection';
 import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Play, Download, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
