@@ -31,9 +31,22 @@ const Landing = () => {
   };
 
   const handleLearnMore = () => {
+    console.log("Tentando scroll para features");
     const featuresSection = document.getElementById('features');
     if (featuresSection) {
-      featuresSection.scrollIntoView({ behavior: 'smooth' });
+      try {
+        featuresSection.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start',
+          inline: 'nearest'
+        });
+      } catch (error) {
+        console.log("Erro no scroll suave, usando fallback:", error);
+        // Fallback para navegadores que não suportam scroll suave
+        featuresSection.scrollIntoView();
+      }
+    } else {
+      console.log("Seção features não encontrada");
     }
   };
 
@@ -138,7 +151,7 @@ const Landing = () => {
         <Button 
           onClick={handleLogin}
           variant="outline"
-          className="text-white border-white hover:bg-white hover:text-slate-900 transition-colors"
+          className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 transition-all duration-300 font-medium"
         >
           Entrar
         </Button>
@@ -195,7 +208,7 @@ const Landing = () => {
             <Button
               onClick={handleLearnMore}
               variant="outline"
-              className="text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full transition-colors"
+              className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full transition-all duration-300 font-medium"
             >
               Saiba mais
             </Button>
