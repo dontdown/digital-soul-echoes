@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js';
 import { useModelDownloader, createModelURLs } from './useModelDownloader';
@@ -35,7 +36,6 @@ interface UseFaceDetectionReturn {
 let isLoadingModels = false;
 let globalModelsLoaded = false;
 let globalIsSimulated = false;
-let globalModelURLs: Record<string, string> = {};
 
 export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) => void): UseFaceDetectionReturn => {
   const [isModelLoaded, setIsModelLoaded] = useState(globalModelsLoaded);
@@ -80,38 +80,25 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     isLoadingModels = true;
     
     try {
-      console.log('🤖 Verificando modelos salvos...');
+      console.log('🤖 Carregando modelos Face-API.js diretamente...');
       setError(null);
       setIsSimulated(false);
       setNeedsDownload(false);
       
-      // Primeiro verificar se temos modelos salvos válidos
-      const hasValidModels = await checkModelsIntegrity();
+      // Usar URLs diretas dos modelos públicos hospedados
+      const MODEL_BASE_URL = '/models/';
       
-      if (!hasValidModels) {
-        console.log('❌ Modelos não encontrados ou corrompidos');
-        setNeedsDownload(true);
-        throw new Error('Modelos precisam ser baixados');
-      }
-      
-      // Criar URLs dos modelos salvos
-      console.log('🔧 Criando URLs dos modelos...');
-      globalModelURLs = await createModelURLs();
-      
-      // Criar um servidor local temporário para os modelos
-      const modelBaseURL = 'blob:';
-      
-      // Carregar modelos um por vez
+      // Carregar modelos um por vez com URLs diretas
       console.log('📥 Carregando TinyFaceDetector...');
-      await faceapi.nets.tinyFaceDetector.load(globalModelURLs['tiny_face_detector_model-weights_manifest.json']);
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_BASE_URL);
       console.log('✅ TinyFaceDetector carregado');
 
       console.log('📥 Carregando FaceExpressionNet...');
-      await faceapi.nets.faceExpressionNet.load(globalModelURLs['face_expression_model-weights_manifest.json']);
+      await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_BASE_URL);
       console.log('✅ FaceExpressionNet carregado');
 
       console.log('📥 Carregando FaceLandmark68Net...');
-      await faceapi.nets.faceLandmark68Net.load(globalModelURLs['face_landmark_68_model-weights_manifest.json']);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_BASE_URL);
       console.log('✅ FaceLandmark68Net carregado');
 
       globalModelsLoaded = true;
@@ -123,19 +110,12 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
       
     } catch (err: any) {
       console.log('⚠️ Erro ao carregar modelos reais:', err);
-      
-      if (err.message.includes('baixados')) {
-        console.log('📦 Modelos precisam ser baixados');
-        setNeedsDownload(true);
-        setError('Modelos precisam ser baixados pela primeira vez');
-      } else {
-        console.log('🔄 Ativando modo simulado como fallback...');
-        globalModelsLoaded = true;
-        globalIsSimulated = true;
-        setIsModelLoaded(true);
-        setIsSimulated(true);
-        setError(`Usando simulação: ${err.message}`);
-      }
+      console.log('🔄 Ativando modo simulado como fallback...');
+      globalModelsLoaded = true;
+      globalIsSimulated = true;
+      setIsModelLoaded(true);
+      setIsSimulated(true);
+      setError(`Usando simulação: ${err.message}`);
     } finally {
       isLoadingModels = false;
     }
@@ -314,12 +294,6 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   useEffect(() => {
     return () => {
       stopDetection();
-      // Limpar URLs quando componente for desmontado
-      Object.values(globalModelURLs).forEach(url => {
-        if (url.startsWith('blob:')) {
-          URL.revokeObjectURL(url);
-        }
-      });
     };
   }, []);
 
