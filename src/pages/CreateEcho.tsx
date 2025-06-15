@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { CharacterSprites } from "@/components/Game/CharacterSprites";
+import CharacterPreview from "@/components/Game/CharacterPreview";
 
 const CreateEcho = () => {
   const navigate = useNavigate();
@@ -93,7 +95,7 @@ const CreateEcho = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8 }}
-        className="bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl relative z-10"
+        className="bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative z-10"
       >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -117,13 +119,28 @@ const CreateEcho = () => {
           </div>
 
           <div>
-            <Label className="text-white">Escolha seu visual:</Label>
-            <RadioGroup value={playerModel} onValueChange={setPlayerModel} className="mt-2">
+            <Label className="text-white mb-4 block">Escolha seu visual:</Label>
+            <RadioGroup value={playerModel} onValueChange={setPlayerModel} className="grid grid-cols-2 gap-4">
               {playerModels.map((model) => (
-                <div key={model.id} className="flex items-center space-x-2">
-                  <RadioGroupItem value={model.id} id={model.id} />
-                  <Label htmlFor={model.id} className="text-gray-300">
-                    {model.name} - {model.description}
+                <div key={model.id} className="relative">
+                  <RadioGroupItem value={model.id} id={model.id} className="sr-only" />
+                  <Label 
+                    htmlFor={model.id} 
+                    className={`cursor-pointer block p-4 rounded-lg border-2 transition-all ${
+                      playerModel === model.id 
+                        ? 'border-cyan-400 bg-slate-700/50' 
+                        : 'border-slate-600 bg-slate-800/30 hover:border-slate-500'
+                    }`}
+                  >
+                    <div className="text-center space-y-3">
+                      <div className="flex justify-center">
+                        <CharacterPreview modelId={model.id} />
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{model.name}</div>
+                        <div className="text-gray-400 text-sm">{model.description}</div>
+                      </div>
+                    </div>
                   </Label>
                 </div>
               ))}

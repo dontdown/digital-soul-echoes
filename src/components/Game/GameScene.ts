@@ -64,13 +64,13 @@ export class GameScene extends Phaser.Scene {
     const playerTexture = `player_${this.gameState.playerModel}`;
     this.player = this.physics.add.sprite(100, 300, playerTexture);
     this.player.setCollideWorldBounds(true);
-    this.player.setScale(2); // Aumentar escala para 2x
+    this.player.setScale(4); // Aumentar escala para 4x para melhor visibilidade
 
     // Criar Echo com sprite baseado no humor e escala maior
     const echoTexture = `echo_${this.gameState.echoMood}`;
     this.echo = this.physics.add.sprite(400, 300, echoTexture);
     this.echo.setCollideWorldBounds(true);
-    this.echo.setScale(2); // Aumentar escala para 2x
+    this.echo.setScale(4); // Aumentar escala para 4x para melhor visibilidade
 
     // Configurar física
     this.physics.add.collider(this.player, this.obstacles);
