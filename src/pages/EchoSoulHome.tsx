@@ -6,14 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useEchoStore } from '@/store/echoStore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import LanguageSelector from '@/components/LanguageSelector';
-import { Sparkles, MessageCircle, User, Heart, Eye, History } from 'lucide-react';
+import { Sparkles, MessageCircle, User, Heart, Eye, History, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EchoSoulHome = () => {
   const navigate = useNavigate();
   const { playerData, echoPersonality, echoMood, echoCreated } = useEchoStore();
   const { t } = useLanguage();
+  const { signOut } = useAuth();
 
   const handleConversar = () => {
     console.log('Tentando acessar conversa. Echo criado:', echoCreated, 'Player data:', playerData);
@@ -36,10 +38,28 @@ const EchoSoulHome = () => {
     navigate('/create-echo');
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast.error('Erro ao fazer logout');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Language Selector - Fixed position */}
-      <div className="fixed top-4 right-4 z-50">
+      {/* Top Navigation */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          size="sm"
+          className="border-red-400 text-red-400 hover:bg-red-400 hover:text-slate-900"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Logout
+        </Button>
         <LanguageSelector />
       </div>
 
