@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,21 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate("/auth");
+  };
+
+  const handleLogin = () => {
+    navigate("/auth");
+  };
+
+  const handleLearnMore = () => {
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const features = [
     {
@@ -120,7 +134,7 @@ const Landing = () => {
           <span className="text-2xl font-bold text-white">EchoSoul</span>
         </div>
         <Button 
-          onClick={() => navigate("/auth")}
+          onClick={handleLogin}
           variant="outline"
           className="text-white border-white hover:bg-white hover:text-slate-900"
         >
@@ -169,7 +183,7 @@ const Landing = () => {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Button
-              onClick={() => navigate("/auth")}
+              onClick={handleGetStarted}
               className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
             >
               Criar seu Echo
@@ -177,7 +191,7 @@ const Landing = () => {
             </Button>
             
             <Button
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={handleLearnMore}
               variant="outline"
               className="text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full"
             >
@@ -334,7 +348,7 @@ const Landing = () => {
             </p>
             
             <Button
-              onClick={() => navigate("/auth")}
+              onClick={handleGetStarted}
               className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-12 py-6 text-xl rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
             >
               Começar Agora - É Grátis
