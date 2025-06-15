@@ -52,30 +52,17 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       });
       
       console.log('✅ MediaPipe FaceLandmarker criado com sucesso!');
-      console.log('🔧 Configurações:', {
-        outputFaceBlendshapes: true,
-        outputFacialTransformationMatrixes: true,
-        runningMode: 'VIDEO',
-        numFaces: 1
-      });
-      
       setIsModelLoaded(true);
       
     } catch (err: any) {
       console.error('❌ ERRO CRÍTICO ao carregar MediaPipe:', err);
-      console.error('📊 Detalhes do erro:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name
-      });
       setError(`Erro ao carregar MediaPipe: ${err.message}`);
       setIsModelLoaded(false);
     }
   }, []);
 
   const analyzeEmotionFromBlendshapes = useCallback((blendshapes: any[]): { emotion: MediaPipeEmotion; confidence: number } => {
-    console.log('🔍 Analisando blendshapes...');
-    console.log('📊 Número de faces detectadas:', blendshapes.length);
+    console.log('🔍 Analisando blendshapes para emoção...');
     
     if (!blendshapes || blendshapes.length === 0) {
       console.log('⚠️ PROBLEMA: Nenhum blendshape detectado');
@@ -83,68 +70,62 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     }
 
     const shapes = blendshapes[0].categories;
-    console.log('📋 Número de categorias de blendshapes:', shapes.length);
+    console.log('📋 Número de categorias de blendshapes encontradas:', shapes.length);
     
     const shapeMap: { [key: string]: number } = {};
     shapes.forEach((shape: any) => {
       shapeMap[shape.categoryName] = shape.score;
     });
 
-    // Log TODOS os blendshapes para debug completo
-    console.log('🎭 TODOS OS BLENDSHAPES:', shapeMap);
-
-    // Encontrar os top 10 blendshapes mais ativos
-    const sortedShapes = Object.entries(shapeMap)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
+    // Log apenas os blendshapes mais relevantes para emoções
+    const emotionRelevantShapes = [
+      'mouthSmileLeft', 'mouthSmileRight', 
+      'mouthFrownLeft', 'mouthFrownRight',
+      'eyeWideLeft', 'eyeWideRight',
+      'browDownLeft', 'browDownRight',
+      'browInnerUp', 'browOuterUpLeft', 'browOuterUpRight'
+    ];
     
-    console.log('🏆 TOP 10 blendshapes mais ativos:', sortedShapes);
+    const relevantShapes: { [key: string]: number } = {};
+    emotionRelevantShapes.forEach(shapeName => {
+      if (shapeMap[shapeName] !== undefined) {
+        relevantShapes[shapeName] = shapeMap[shapeName];
+      }
+    });
+    
+    console.log('🎭 BLENDSHAPES RELEVANTES:', relevantShapes);
 
-    // Cálculos de emoção com análise mais robusta
+    // Cálculos de emoção simplificados e mais sensíveis
     const felizScore = Math.max(
       (shapeMap['mouthSmileLeft'] || 0),
-      (shapeMap['mouthSmileRight'] || 0),
-      ((shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0)) / 2,
-      ((shapeMap['mouthCornerPullLeft'] || 0) + (shapeMap['mouthCornerPullRight'] || 0)) / 2
+      (shapeMap['mouthSmileRight'] || 0)
     );
     
     const tristeScore = Math.max(
       (shapeMap['mouthFrownLeft'] || 0),
-      (shapeMap['mouthFrownRight'] || 0),
-      ((shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0)) / 2,
-      ((shapeMap['mouthCornerDownLeft'] || 0) + (shapeMap['mouthCornerDownRight'] || 0)) / 2
+      (shapeMap['mouthFrownRight'] || 0)
     );
     
     const surprsoScore = Math.max(
       ((shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0)) / 2,
-      (shapeMap['jawOpen'] || 0),
-      ((shapeMap['browOuterUpLeft'] || 0) + (shapeMap['browOuterUpRight'] || 0)) / 2,
-      ((shapeMap['browInnerUp'] || 0))
+      ((shapeMap['browOuterUpLeft'] || 0) + (shapeMap['browOuterUpRight'] || 0)) / 2
     );
     
     const raivaScore = Math.max(
-      ((shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0)) / 2,
-      ((shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0)) / 2,
-      ((shapeMap['browLowererLeft'] || 0) + (shapeMap['browLowererRight'] || 0)) / 2,
-      (shapeMap['noseSneerLeft'] || 0) + (shapeMap['noseSneerRight'] || 0)
+      ((shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0)) / 2
     );
     
     const cansadoScore = Math.max(
-      ((shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0)) / 2,
-      ((shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0)) / 2,
-      ((shapeMap['upperLidRaiserLeft'] || 0) + (shapeMap['upperLidRaiserRight'] || 0)) / 2
+      ((shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0)) / 2
     );
 
-    // Atividade facial geral
-    const totalActivity = felizScore + tristeScore + surprsoScore + raivaScore + cansadoScore;
-    
     const emotions = {
       feliz: felizScore,
       triste: tristeScore,
       surpreso: surprsoScore,
       raiva: raivaScore,
       cansado: cansadoScore,
-      neutro: Math.max(0.1, 0.4 - totalActivity)
+      neutro: 0.3 // Base neutra
     };
 
     console.log('🎯 SCORES CALCULADOS:', {
@@ -153,77 +134,64 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       surpreso: emotions.surpreso.toFixed(4),
       raiva: emotions.raiva.toFixed(4),
       cansado: emotions.cansado.toFixed(4),
-      neutro: emotions.neutro.toFixed(4),
-      atividadeTotal: totalActivity.toFixed(4)
+      neutro: emotions.neutro.toFixed(4)
     });
 
-    // Encontrar emoção dominante
+    // Encontrar emoção dominante (lowered threshold to 0.01)
     let maxEmotion: MediaPipeEmotion = 'neutro';
     let maxScore = emotions.neutro;
 
     Object.entries(emotions).forEach(([emotion, score]) => {
-      if (score > maxScore) {
+      if (score > maxScore && score > 0.01) { // Threshold muito baixo para capturar micro-expressões
         maxEmotion = emotion as MediaPipeEmotion;
         maxScore = score;
       }
     });
 
-    // Confiança baseada na diferença entre a primeira e segunda emoção
-    const sortedEmotions = Object.entries(emotions).sort(([,a], [,b]) => b - a);
-    const confidence = Math.min(Math.max((sortedEmotions[0][1] - sortedEmotions[1][1]) * 5, 0.1), 1);
+    const confidence = Math.min(Math.max(maxScore * 5, 0.1), 1); // Amplificar confiança
 
     console.log(`🎯 RESULTADO FINAL: ${maxEmotion} (score: ${maxScore.toFixed(4)}, confiança: ${confidence.toFixed(4)})`);
-    console.log('🏁 Ranking de emoções:', sortedEmotions.map(([e, s]) => `${e}: ${s.toFixed(4)}`));
 
-    return { 
-      emotion: maxEmotion, 
-      confidence
-    };
+    return { emotion: maxEmotion, confidence };
   }, []);
 
   const processFrame = useCallback((videoElement: HTMLVideoElement) => {
-    if (!faceLandmarkerRef.current || !isDetecting) {
-      console.log('⚠️ Processamento parado: modelo ou detecção inativa');
+    frameCountRef.current++;
+    
+    console.log(`🎬 PROCESSANDO FRAME ${frameCountRef.current}`);
+    
+    if (!faceLandmarkerRef.current) {
+      console.log('❌ FaceLandmarker não disponível');
+      return;
+    }
+    
+    if (!isDetecting) {
+      console.log('❌ Detecção não está ativa');
       return;
     }
 
-    frameCountRef.current++;
-    
     try {
       const now = performance.now();
       
-      // Log a cada 30 frames (aproximadamente 1 segundo)
-      if (frameCountRef.current % 30 === 0) {
-        console.log(`📹 Processando frame ${frameCountRef.current} - Vídeo: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
-        console.log(`📊 Estado do vídeo:`, {
-          readyState: videoElement.readyState,
-          currentTime: videoElement.currentTime,
-          paused: videoElement.paused,
-          duration: videoElement.duration
-        });
-      }
+      console.log(`📹 Processando frame ${frameCountRef.current} - timestamp: ${now}`);
+      console.log(`📊 Estado do vídeo:`, {
+        readyState: videoElement.readyState,
+        currentTime: videoElement.currentTime.toFixed(3),
+        paused: videoElement.paused,
+        width: videoElement.videoWidth,
+        height: videoElement.videoHeight
+      });
       
-      // Processar a cada 100ms para reduzir carga
-      if (now - lastEmotionTimeRef.current < 100) {
-        if (isDetecting) {
-          animationFrameRef.current = requestAnimationFrame(() => processFrame(videoElement));
-        }
-        return;
-      }
-      
-      lastEmotionTimeRef.current = now;
-      
-      console.log('🔄 Executando detectForVideo...');
       const results = faceLandmarkerRef.current.detectForVideo(videoElement, now);
       
-      console.log('📊 Resultados da detecção:', {
+      console.log('📊 Resultados da detecção MediaPipe:', {
         faceLandmarks: results.faceLandmarks?.length || 0,
         faceBlendshapes: results.faceBlendshapes?.length || 0,
         facialTransformationMatrixes: results.facialTransformationMatrixes?.length || 0
       });
       
       if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
-        console.log('✅ ROSTO DETECTADO! Analisando blendshapes...');
+        console.log('✅ ROSTO DETECTADO! Analisando emoção...');
         const { emotion, confidence: conf } = analyzeEmotionFromBlendshapes(results.faceBlendshapes);
         
         setCurrentEmotion(emotion);
@@ -236,64 +204,76 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
         console.log(`🎭 EMOÇÃO DETECTADA: ${emotion} (${Math.round(conf * 100)}%)`);
       } else {
         console.log('❌ NENHUM ROSTO DETECTADO no frame atual');
-        // Não resetar emoção imediatamente, manter por alguns frames
-        if (frameCountRef.current % 60 === 0) { // Reset a cada 2 segundos sem detecção
+        // Manter emoção anterior por alguns frames
+        if (frameCountRef.current % 30 === 0) {
+          console.log('🔄 Reset para neutro após 30 frames sem detecção');
           setCurrentEmotion('neutro');
           setConfidence(0.1);
         }
       }
       
     } catch (err) {
-      console.error('💥 ERRO CRÍTICO no processamento:', err);
-      console.error('📊 Detalhes do erro:', {
+      console.error('💥 ERRO CRÍTICO no processamento do frame:', err);
+      console.error('📊 Detalhes completos do erro:', {
         message: (err as Error).message,
-        stack: (err as Error).stack
+        stack: (err as Error).stack,
+        videoState: {
+          readyState: videoElement.readyState,
+          currentTime: videoElement.currentTime,
+          paused: videoElement.paused
+        }
       });
     }
 
+    // Continuar processamento
     if (isDetecting) {
+      console.log('🔄 Agendando próximo frame...');
       animationFrameRef.current = requestAnimationFrame(() => processFrame(videoElement));
+    } else {
+      console.log('⏹️ Parando processamento - isDetecting = false');
     }
   }, [isDetecting, analyzeEmotionFromBlendshapes, onEmotionChange]);
 
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!faceLandmarkerRef.current || !isModelLoaded) {
       console.warn('⚠️ ERRO: Modelo MediaPipe não carregado');
-      console.log('📊 Estado atual:', {
-        faceLandmarker: !!faceLandmarkerRef.current,
-        isModelLoaded
-      });
       return;
     }
 
     console.log('🚀 INICIANDO DETECÇÃO MEDIAPIPE');
-    console.log('📹 Elemento de vídeo recebido:', {
+    console.log('📹 Elemento de vídeo detalhado:', {
       width: videoElement.videoWidth,
       height: videoElement.videoHeight,
       readyState: videoElement.readyState,
       currentTime: videoElement.currentTime,
       paused: videoElement.paused,
-      srcObject: !!videoElement.srcObject
+      srcObject: !!videoElement.srcObject,
+      duration: videoElement.duration
     });
 
     setIsDetecting(true);
     frameCountRef.current = 0;
     
-    // Aguardar um pouco e verificar se o vídeo está realmente pronto
+    console.log('✅ Estado alterado para isDetecting = true');
+    console.log('🎬 Iniciando processamento de frames...');
+    
+    // Aguardar um momento e iniciar processamento
     setTimeout(() => {
       if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
-        console.log('✅ Vídeo confirmado como pronto, iniciando processamento...');
+        console.log('✅ Vídeo confirmado como pronto, iniciando loop de processamento...');
         processFrame(videoElement);
       } else {
         console.error('❌ PROBLEMA: Vídeo não está pronto para processamento');
-        console.log('📊 Estado detalhado do vídeo:', {
+        console.log('📊 Estado completo do vídeo:', {
           readyState: videoElement.readyState,
           videoWidth: videoElement.videoWidth,
           videoHeight: videoElement.videoHeight,
-          networkState: videoElement.networkState
+          networkState: videoElement.networkState,
+          currentSrc: videoElement.currentSrc,
+          srcObject: videoElement.srcObject
         });
       }
-    }, 500);
+    }, 100);
   }, [isModelLoaded, processFrame]);
 
   const stopDetection = useCallback(() => {
