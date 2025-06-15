@@ -30,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private speechBubble?: Phaser.GameObjects.Group;
   private currentBubbleText?: string;
   private bubbleTimer?: Phaser.Time.TimerEvent;
+  private activeBubbleElements?: { bubble: Phaser.GameObjects.Graphics; text: Phaser.GameObjects.Text };
 
   constructor(gameState: GameState, onChatToggle: (show: boolean) => void, onMemoryTrigger: (memory: string) => void) {
     super({ key: 'GameScene' });
@@ -466,7 +467,11 @@ export class GameScene extends Phaser.Scene {
 
   private createSpeechBubble(message: string) {
     // Limpar balão anterior
-    this.speechBubble?.clear(true, true);
+    if (this.activeBubbleElements) {
+      this.activeBubbleElements.bubble.destroy();
+      this.activeBubbleElements.text.destroy();
+      this.activeBubbleElements = undefined;
+    }
 
     // Criar balão de fala
     const bubbleWidth = Math.min(200, message.length * 8 + 40);
@@ -504,9 +509,8 @@ export class GameScene extends Phaser.Scene {
     });
     text.setOrigin(0.5);
 
-    // Adicionar ao grupo
-    this.speechBubble?.add(bubble);
-    this.speechBubble?.add(text);
+    // Armazenar referências dos elementos ativos
+    this.activeBubbleElements = { bubble, text };
 
     // Animação de aparecimento
     bubble.setAlpha(0);
@@ -521,22 +525,56 @@ export class GameScene extends Phaser.Scene {
 
     // Remover após 4 segundos
     this.time.delayedCall(4000, () => {
-      this.tweens.add({
-        targets: [bubble, text],
-        alpha: 0,
-        duration: 300,
-        ease: 'Power2',
-        onComplete: () => {
-          bubble.destroy();
-          text.destroy();
-        }
-      });
+      if (this.activeBubbleElements && this.activeBubbleElements.bubble === bubble) {
+        this.tweens.add({
+          targets: [bubble, text],
+          alpha: 0,
+          duration: 300,
+          ease: 'Power2',
+          onComplete: () => {
+            bubble.destroy();
+            text.destroy();
+            if (this.activeBubbleElements && this.activeBubbleElements.bubble === bubble) {
+              this.activeBubbleElements = undefined;
+            }
+          }
+        });
+      }
     });
   }
 
   private updateSpeechBubblePosition() {
-    // Atualizar posição dos balões se o Echo se mover
-    // (implementação simplificada - os balões são recriados quando necessário)
+    // Atualizar posição do balão ativo para seguir o Echo
+    if (this.activeBubbleElements) {
+      const bubbleWidth = 200; // Usar largura padrão para cálculo
+      const bubbleHeight = 60;
+      const bubbleX = this.echo.x - bubbleWidth / 2;
+      const bubbleY = this.echo.y - 80;
+
+      // Limpar e redesenhar o balão na nova posição
+      this.activeBubbleElements.bubble.clear();
+      this.activeBubbleElements.bubble.fillStyle(0xffffff, 0.95);
+      this.activeBubbleElements.bubble.lineStyle(2, 0x888888);
+      
+      // Corpo do balão
+      this.activeBubbleElements.bubble.fillRoundedRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+      this.activeBubbleElements.bubble.strokeRoundedRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+      
+      // Pontinha do balão (apontando para o Echo)
+      this.activeBubbleElements.bubble.fillTriangle(
+        this.echo.x - 8, bubbleY + bubbleHeight,
+        this.echo.x + 8, bubbleY + bubbleHeight,
+        this.echo.x, bubbleY + bubbleHeight + 12
+      );
+      this.activeBubbleElements.bubble.strokeTriangle(
+        this.echo.x - 8, bubbleY + bubbleHeight,
+        this.echo.x + 8, bubbleY + bubbleHeight,
+        this.echo.x, bubbleY + bubbleHeight + 12
+      );
+
+      // Atualizar posição do texto
+      this.activeBubbleElements.text.setPosition(this.echo.x, bubbleY + bubbleHeight / 2);
+    }
   }
 
   private handlePlayerMovement() {
