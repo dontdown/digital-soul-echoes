@@ -78,10 +78,12 @@ const EchoSoul = () => {
   }, [updateEchoMood]);
 
   const handleChatClose = useCallback(() => {
+    console.log('Fechando chat do React');
     setShowChat(false);
   }, []);
 
   const handleChatToggle = useCallback((show: boolean) => {
+    console.log('Toggle chat:', show);
     setShowChat(show);
   }, []);
 

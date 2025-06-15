@@ -224,39 +224,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startChat() {
+    console.log('Iniciando chat - pausando movimento');
     this.isChatting = true;
     
-    // Desabilitar controles de movimento durante o chat
-    this.input.keyboard!.disableGlobalCapture();
-    this.cursors.left.enabled = false;
-    this.cursors.right.enabled = false;
-    this.cursors.up.enabled = false;
-    this.cursors.down.enabled = false;
-    this.wasd.W.enabled = false;
-    this.wasd.A.enabled = false;
-    this.wasd.S.enabled = false;
-    this.wasd.D.enabled = false;
+    // Parar movimentos imediatamente
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
     
     this.onChatToggle(true);
-    console.log('Chat iniciado - Controles desabilitados, jogador e Echo parados');
   }
 
   public stopChat() {
+    console.log('Finalizando chat - retomando movimento');
     this.isChatting = false;
     
-    // Reabilitar controles de movimento
-    this.input.keyboard!.enableGlobalCapture();
-    this.cursors.left.enabled = true;
-    this.cursors.right.enabled = true;
-    this.cursors.up.enabled = true;
-    this.cursors.down.enabled = true;
-    this.wasd.W.enabled = true;
-    this.wasd.A.enabled = true;
-    this.wasd.S.enabled = true;
-    this.wasd.D.enabled = true;
+    // Garantir que as velocidades sejam zeradas antes de permitir movimento
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
     
     this.onChatToggle(false);
-    console.log('Chat finalizado - Controles reabilitados, jogador e Echo podem se mover');
   }
 
   private checkProximity() {
@@ -353,5 +339,12 @@ export class GameScene extends Phaser.Scene {
 
   public getChatStatus() {
     return this.isChatting;
+  }
+
+  public forceStopChat() {
+    console.log('Forçando parada do chat');
+    this.isChatting = false;
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
   }
 }
