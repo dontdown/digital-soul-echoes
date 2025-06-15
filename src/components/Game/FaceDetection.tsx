@@ -117,23 +117,23 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     };
   }, [currentEmotion]);
 
-  // Auto-iniciar detecção sensível
+  // Auto-iniciar detecção estável
   useEffect(() => {    
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🎬 FaceDetection: Auto-iniciando detecção SENSÍVEL...');
+      console.log('🎬 FaceDetection: Auto-iniciando detecção ESTÁVEL...');
       
       const video = videoRef.current;
       
-      // Reduzir delay ainda mais
+      // Delay para estabilização
       setTimeout(() => {
         if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
-          console.log('✅ FaceDetection: Iniciando detecção SENSÍVEL...');
+          console.log('✅ FaceDetection: Iniciando detecção ESTÁVEL...');
           startDetection(videoRef.current);
-          toast.success(`${currentModel} SENSÍVEL iniciado! 3 FPS`, {
+          toast.success(`${currentModel} ESTÁVEL iniciado! 1.5 FPS`, {
             duration: 1500
           });
         }
-      }, 300);
+      }, 500);
     }
   }, [isActive, isModelLoaded, isEnabled, currentModel, startDetection, isDetecting]);
 
@@ -152,7 +152,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium text-sm">
-              Detecção Ultra-Otimizada
+              Detecção Estável
             </span>
             {!isSimulated && <Play className="w-3 h-3 text-green-400" />}
           </div>
@@ -212,7 +212,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {currentModel === 'mediapipe' ? (
             <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-2">
               <div className="text-green-400 text-sm font-medium">
-                🤖 MediaPipe Ultra-Otimizado (1 FPS)
+                🤖 MediaPipe Estável (1.5 FPS)
               </div>
             </div>
           ) : currentModel === 'tensorflow' ? (
@@ -252,7 +252,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             <div className="bg-slate-700/50 rounded-lg p-2">
               <div className="flex items-center justify-between">
                 <span className="text-gray-300 text-xs">
-                  {isSimulated ? 'Demo:' : 'Detectado:'}
+                  {isSimulated ? 'Demo:' : 'Estável:'}
                 </span>
                 <span className="text-lg">{emotionDisplay.emoji}</span>
               </div>
@@ -272,10 +272,10 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 </div>
               )}
               
-              {/* Indicador de sensibilidade */}
+              {/* Indicador de estabilidade */}
               {currentModel === 'mediapipe' && isDetecting && (
-                <div className="text-xs text-green-400 mt-1">
-                  🎯 Modo Ultra-Sensível Ativo
+                <div className="text-xs text-blue-400 mt-1">
+                  🎯 Modo Estável Ativo
                 </div>
               )}
             </div>
@@ -309,7 +309,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🎯 Ultra-sensível (3 FPS) - Faça expressões!
+          🎯 Estável (1.5 FPS) - Mantenha a expressão por alguns segundos
         </div>
       </motion.div>
     </AnimatePresence>
