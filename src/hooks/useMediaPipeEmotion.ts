@@ -135,12 +135,6 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
   }, []);
 
   const processFrame = useCallback(() => {
-    // Verificar se ainda deve processar
-    if (!isProcessingRef.current) {
-      console.log('🛑 Processamento interrompido - flag inativa');
-      return;
-    }
-
     if (!faceLandmarkerRef.current) {
       console.log('❌ FaceLandmarker não disponível');
       return;
@@ -148,6 +142,12 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     
     if (!videoElementRef.current) {
       console.log('❌ Elemento de vídeo não disponível');
+      return;
+    }
+
+    // Verificar se deve continuar processando
+    if (!isProcessingRef.current) {
+      console.log('🛑 Processamento parado por flag');
       return;
     }
 
@@ -201,6 +201,8 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     // Continuar processamento se ainda estiver ativo
     if (isProcessingRef.current) {
       animationFrameRef.current = requestAnimationFrame(processFrame);
+    } else {
+      console.log('🛑 Parando processamento - flag desativada');
     }
   }, [analyzeEmotionFromBlendshapes, onEmotionChange]);
 
@@ -211,35 +213,37 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     }
 
     console.log('🚀 INICIANDO DETECÇÃO MEDIAPIPE');
-    console.log('📹 Elemento de vídeo recebido:', {
+    console.log('📹 Elemento de vídeo detalhado:', {
       width: videoElement.videoWidth,
       height: videoElement.videoHeight,
       readyState: videoElement.readyState,
       currentTime: videoElement.currentTime,
-      paused: videoElement.paused
+      paused: videoElement.paused,
+      muted: videoElement.muted,
+      srcObject: !!videoElement.srcObject
     });
 
-    // Armazenar referências
+    // Configurar estados e referências
     videoElementRef.current = videoElement;
     setIsDetecting(true);
     isProcessingRef.current = true;
     frameCountRef.current = 0;
     
-    console.log('✅ Estado alterado para isDetecting = true e isProcessing = true');
+    console.log('✅ Estado alterado para isDetecting = true');
+    console.log('✅ isProcessingRef definido como true');
     
-    // Aguardar um momento para garantir que tudo está pronto
+    // Aguardar um momento e iniciar processamento
     setTimeout(() => {
-      if (videoElement.readyState >= 2 && videoElement.videoWidth > 0 && isProcessingRef.current) {
-        console.log('✅ Vídeo confirmado como pronto, iniciando processamento...');
+      if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
+        console.log('✅ Vídeo confirmado como pronto, iniciando loop de processamento...');
         processFrame();
       } else {
         console.error('❌ Vídeo não está pronto:', {
           readyState: videoElement.readyState,
-          videoWidth: videoElement.videoWidth,
-          isProcessing: isProcessingRef.current
+          videoWidth: videoElement.videoWidth
         });
       }
-    }, 200);
+    }, 100);
   }, [isModelLoaded, processFrame]);
 
   const stopDetection = useCallback(() => {
