@@ -46,7 +46,7 @@ const EchoSoul = () => {
         player_name: playerData.name,
         player_mood: playerData.mood,
         player_preference: playerData.preference,
-        player_model: playerData.model || 'adventure',
+        // Removido player_model pois não existe na tabela
         echo_personality: echoPersonality,
         echo_mood: echoMood,
         echo_sprite: 'blue'

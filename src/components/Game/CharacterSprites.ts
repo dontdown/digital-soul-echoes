@@ -1,3 +1,4 @@
+
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -35,10 +36,33 @@ export class CharacterSprites {
   static createWalkingSprites(scene: Phaser.Scene, spriteKey: string, colors: any) {
     const frameWidth = 32;
     const frameHeight = 32;
+    const atlasKey = `${spriteKey}_atlas`;
+    const framesKey = `${spriteKey}_frames`;
+
+    // Check if textures already exist and remove them
+    if (scene.textures.exists(atlasKey)) {
+      scene.textures.remove(atlasKey);
+    }
+    if (scene.textures.exists(framesKey)) {
+      scene.textures.remove(framesKey);
+    }
 
     // Criar um canvas para o atlas completo
-    const atlasCanvas = scene.textures.createCanvas(`${spriteKey}_atlas`, frameWidth * 4, frameHeight);
+    const atlasCanvas = scene.textures.createCanvas(atlasKey, frameWidth * 4, frameHeight);
+    
+    // Verificar se o canvas foi criado corretamente
+    if (!atlasCanvas) {
+      console.error('Failed to create canvas texture:', atlasKey);
+      return;
+    }
+
     const atlasContext = atlasCanvas.getContext();
+    
+    // Verificar se o contexto foi obtido corretamente
+    if (!atlasContext) {
+      console.error('Failed to get canvas context for:', atlasKey);
+      return;
+    }
     
     // Limpar o canvas
     atlasContext.clearRect(0, 0, frameWidth * 4, frameHeight);
@@ -54,12 +78,14 @@ export class CharacterSprites {
     atlasCanvas.refresh();
 
     // Configurar o atlas no Phaser com frames nomeados - usar a textura canvas diretamente
-    if (!scene.textures.exists(`${spriteKey}_frames`)) {
-      const canvasTexture = scene.textures.get(`${spriteKey}_atlas`);
-      scene.textures.addSpriteSheet(`${spriteKey}_frames`, canvasTexture, {
+    try {
+      const canvasTexture = scene.textures.get(atlasKey);
+      scene.textures.addSpriteSheet(framesKey, canvasTexture, {
         frameWidth: frameWidth,
         frameHeight: frameHeight
       });
+    } catch (error) {
+      console.error('Error creating sprite sheet:', error);
     }
   }
 
