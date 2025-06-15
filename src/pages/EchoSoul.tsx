@@ -28,7 +28,7 @@ const EchoSoul = () => {
       playerName: playerData.name,
       playerMood: playerData.mood,
       playerPreference: playerData.preference,
-      playerModel: playerData.model || 'casual', // fallback para dados antigos
+      playerModel: playerData.model || 'adventure', // fallback para dados antigos
       echoPersonality,
       echoMood,
       echoSprite: 'blue'
@@ -42,17 +42,23 @@ const EchoSoul = () => {
     if (!playerData) return;
 
     try {
+      const gameStateData = {
+        player_name: playerData.name,
+        player_mood: playerData.mood,
+        player_preference: playerData.preference,
+        player_model: playerData.model || 'adventure',
+        echo_personality: echoPersonality,
+        echo_mood: echoMood,
+        echo_sprite: 'blue'
+      };
+
+      console.log('Salvando estado do jogo:', gameStateData);
+
       await supabase
         .from('game_state')
-        .insert({
-          player_name: playerData.name,
-          player_mood: playerData.mood,
-          player_preference: playerData.preference,
-          player_model: playerData.model || 'casual',
-          echo_personality: echoPersonality,
-          echo_mood: echoMood,
-          echo_sprite: 'blue'
-        });
+        .insert(gameStateData);
+        
+      console.log('Estado do jogo salvo com sucesso');
     } catch (error) {
       console.error('Erro ao salvar estado do jogo:', error);
     }

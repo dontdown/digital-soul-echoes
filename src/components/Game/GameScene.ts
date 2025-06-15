@@ -61,13 +61,13 @@ export class GameScene extends Phaser.Scene {
     this.createObstacles();
 
     // Criar jogador com o modelo escolhido
-    const playerTexture = `player_${this.gameState.playerModel}_atlas`;
+    const playerTexture = `player_${this.gameState.playerModel}_frames`;
     this.player = this.physics.add.sprite(100, 300, playerTexture, 0);
     this.player.setCollideWorldBounds(true);
     this.player.setScale(4);
 
     // Criar Echo
-    const echoTexture = `echo_${this.gameState.echoMood}_atlas`;
+    const echoTexture = `echo_${this.gameState.echoMood}_frames`;
     this.echo = this.physics.add.sprite(400, 300, echoTexture, 0);
     this.echo.setCollideWorldBounds(true);
     this.echo.setScale(4);
@@ -139,16 +139,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAnimations() {
-    const playerKey = `player_${this.gameState.playerModel}_atlas`;
+    const playerKey = `player_${this.gameState.playerModel}_frames`;
     if (this.textures.exists(playerKey)) {
       this.anims.create({
         key: `${this.gameState.playerModel}_walk`,
-        frames: [
-          { key: playerKey, frame: 0 },
-          { key: playerKey, frame: 1 },
-          { key: playerKey, frame: 2 },
-          { key: playerKey, frame: 3 }
-        ],
+        frames: this.anims.generateFrameNumbers(playerKey, { start: 0, end: 3 }),
         frameRate: 8,
         repeat: -1
       });
@@ -160,16 +155,11 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    const echoKey = `echo_${this.gameState.echoMood}_atlas`;
+    const echoKey = `echo_${this.gameState.echoMood}_frames`;
     if (this.textures.exists(echoKey)) {
       this.anims.create({
         key: `echo_${this.gameState.echoMood}_walk`,
-        frames: [
-          { key: echoKey, frame: 0 },
-          { key: echoKey, frame: 1 },
-          { key: echoKey, frame: 2 },
-          { key: echoKey, frame: 3 }
-        ],
+        frames: this.anims.generateFrameNumbers(echoKey, { start: 0, end: 3 }),
         frameRate: 6,
         repeat: -1
       });
@@ -338,7 +328,7 @@ export class GameScene extends Phaser.Scene {
 
     this.gameState.echoMood = newMood;
     
-    const textureKey = `echo_${newMood}_atlas`;
+    const textureKey = `echo_${newMood}_frames`;
     if (!this.textures.exists(textureKey)) {
       CharacterSprites.createEchoSprite(this, newMood);
     }

@@ -37,46 +37,30 @@ export class CharacterSprites {
     const frameWidth = 32;
     const frameHeight = 32;
 
-    // Criar texturas individuais para cada frame da animação
-    const frames = ['idle', 'walk1', 'walk2', 'walk3'];
-    
-    frames.forEach((frameName, index) => {
-      const textureKey = `${spriteKey}_${frameName}`;
-      const canvas = scene.textures.createCanvas(textureKey, frameWidth, frameHeight);
-      const context = canvas.getContext();
-      
-      // Limpar canvas
-      context.clearRect(0, 0, frameWidth, frameHeight);
-      
-      // Desenhar o personagem baseado no frame
-      let pose = 'idle';
-      if (frameName === 'walk1') pose = 'left-step';
-      else if (frameName === 'walk2') pose = 'idle';
-      else if (frameName === 'walk3') pose = 'right-step';
-      
-      this.drawCharacterOnCanvas(context, 0, 0, frameWidth, frameHeight, colors, pose);
-      canvas.refresh();
-    });
-
-    // Criar uma textura atlas para a animação usando createCanvas diretamente
+    // Criar um canvas para o atlas completo
     const atlasCanvas = scene.textures.createCanvas(`${spriteKey}_atlas`, frameWidth * 4, frameHeight);
     const atlasContext = atlasCanvas.getContext();
     
-    frames.forEach((frameName, index) => {
-      const frameTexture = scene.textures.get(`${spriteKey}_${frameName}`);
-      
-      // Verificar se a textura existe e tem fonte canvas
-      if (frameTexture && frameTexture.source && frameTexture.source[0]) {
-        const source = frameTexture.source[0];
-        
-        // Verificar se a fonte é um canvas
-        if (source.source && source.source instanceof HTMLCanvasElement) {
-          atlasContext.drawImage(source.source, index * frameWidth, 0);
-        }
-      }
-    });
+    // Limpar o canvas
+    atlasContext.clearRect(0, 0, frameWidth * 4, frameHeight);
+
+    // Criar 4 frames da animação
+    const poses = ['idle', 'left-step', 'idle', 'right-step'];
     
+    poses.forEach((pose, index) => {
+      // Desenhar cada frame diretamente no atlas
+      this.drawCharacterOnCanvas(atlasContext, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
+    });
+
     atlasCanvas.refresh();
+
+    // Configurar o atlas no Phaser com frames nomeados
+    if (!scene.textures.exists(`${spriteKey}_frames`)) {
+      scene.textures.addSpriteSheet(`${spriteKey}_frames`, atlasCanvas.getCanvas(), {
+        frameWidth: frameWidth,
+        frameHeight: frameHeight
+      });
+    }
   }
 
   static drawCharacterOnCanvas(context: CanvasRenderingContext2D, offsetX: number, offsetY: number, frameWidth: number, frameHeight: number, colors: any, pose: string) {
