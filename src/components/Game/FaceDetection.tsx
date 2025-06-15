@@ -121,20 +121,20 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
   // Auto-iniciar detecção otimizada
   useEffect(() => {    
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🎬 FaceDetection: Auto-iniciando detecção otimizada...');
+      console.log('🎬 FaceDetection: Auto-iniciando detecção balanceada...');
       
       const video = videoRef.current;
       
       // Aguardar menos tempo para reduzir delay
       setTimeout(() => {
         if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
-          console.log('✅ FaceDetection: Iniciando detecção ultra-otimizada...');
+          console.log('✅ FaceDetection: Iniciando detecção balanceada...');
           startDetection(videoRef.current);
-          toast.success(`${currentModel} iniciado! 1 FPS para máxima performance`, {
+          toast.success(`${currentModel} iniciado! 2 FPS balanceado`, {
             duration: 1500
           });
         }
-      }, 500); // Reduzido de 1000ms para 500ms
+      }, 500);
     }
   }, [isActive, isModelLoaded, isEnabled, currentModel, startDetection, isDetecting]);
 
@@ -303,7 +303,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🚀 Performance ultra-otimizada (1 FPS)
+          🚀 Performance balanceada (2 FPS)
         </div>
       </motion.div>
     </AnimatePresence>
