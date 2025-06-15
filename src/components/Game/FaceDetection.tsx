@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useFaceDetection, DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Play } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Play, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -151,6 +150,11 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               <div className="text-orange-400 text-xs">
                 🎭 Modo Demo: Gera emoções simuladas para teste
               </div>
+              {detectionError && (
+                <div className="text-orange-300 text-xs mt-1">
+                  Motivo: {detectionError}
+                </div>
+              )}
             </div>
           )}
 
@@ -179,17 +183,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 <span>Erro:</span>
               </div>
               <div className="text-red-300 text-xs mt-1">{webcamError}</div>
-            </div>
-          )}
-
-          {/* Erro de detecção */}
-          {detectionError && (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-2">
-              <div className="flex items-center space-x-2 text-red-400 text-sm">
-                <AlertCircle className="w-3 h-3" />
-                <span>Erro:</span>
-              </div>
-              <div className="text-red-300 text-xs mt-1">{detectionError}</div>
             </div>
           )}
 
@@ -247,7 +240,15 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          {isSimulated ? '🎭 Demo Mode - Simulated Emotions' : '🚀 Powered by Face-API.js - Real AI!'}
+          {isSimulated ? (
+            <>
+              🎭 Demo Mode - Simulated Emotions
+              <br />
+              <span className="text-orange-400">Models may be corrupted. Check console for details.</span>
+            </>
+          ) : (
+            '🚀 Powered by Face-API.js - Real AI!'
+          )}
         </div>
       </motion.div>
     </AnimatePresence>
