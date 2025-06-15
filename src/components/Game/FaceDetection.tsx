@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
 
   useEffect(() => {
     if (isVisible) {
-      console.log('🎭 Carregando modelos de detecção facial...');
+      console.log('🎭 Carregando modelos...');
       loadModels();
     }
   }, [isVisible, loadModels]);
@@ -37,19 +36,17 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
       try {
-        console.log('🚀 Iniciando detecção facial...');
-        await startWebcam();
+        console.log('🚀 Ativando câmera...');
         setIsEnabled(true);
-        toast.success('Câmera ativada! Aguarde o carregamento...', {
-          duration: 3000
-        });
+        await startWebcam();
+        toast.success('Câmera ativada!');
       } catch (err) {
-        console.error('💥 Erro ao ativar câmera:', err);
-        toast.error('Erro ao ativar câmera. Verifique as permissões.');
+        console.error('💥 Erro:', err);
+        toast.error('Erro ao ativar câmera');
         setIsEnabled(false);
       }
     } else {
-      console.log('🛑 Desativando detecção facial...');
+      console.log('🛑 Desativando câmera...');
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
@@ -57,14 +54,14 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   };
 
-  // Iniciar detecção quando vídeo estiver ativo
+  // Auto-iniciar detecção quando câmera estiver ativa
   useEffect(() => {
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🔄 Auto-iniciando detecção de emoções...');
+      console.log('🔄 Iniciando detecção...');
       setTimeout(() => {
         if (videoRef.current && isActive) {
           startDetection(videoRef.current);
-          toast.success('Detecção de emoções ativa!');
+          toast.success('Detecção ativa!');
         }
       }, 1000);
     }
@@ -119,19 +116,19 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           </Button>
         </div>
 
-        {/* Status detalhado */}
+        {/* Status */}
         <div className="space-y-2">
           {/* Status do modelo */}
           <div className="flex items-center space-x-2 text-sm">
             {isModelLoaded ? (
               <>
                 <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">Detecção inicializada</span>
+                <span className="text-green-400">Detecção pronta</span>
               </>
             ) : (
               <>
                 <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                <span className="text-yellow-400">Carregando detecção...</span>
+                <span className="text-yellow-400">Carregando...</span>
               </>
             )}
           </div>
@@ -142,34 +139,25 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               {isActive ? (
                 <>
                   <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span className="text-green-400">Câmera ativa</span>
+                  <span className="text-green-400">Câmera funcionando</span>
                 </>
               ) : (
                 <>
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                  <span className="text-yellow-400">Conectando câmera...</span>
+                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span className="text-blue-400">Inicializando câmera...</span>
                 </>
               )}
             </div>
           )}
 
-          {/* Erros */}
+          {/* Erro da webcam */}
           {webcamError && (
             <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-2">
               <div className="flex items-center space-x-2 text-red-400 text-sm">
                 <AlertCircle className="w-3 h-3" />
-                <span>Erro da câmera:</span>
+                <span>Erro:</span>
               </div>
               <div className="text-red-300 text-xs mt-1">{webcamError}</div>
-            </div>
-          )}
-
-          {detectionError && (
-            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
-              <div className="flex items-center space-x-2 text-orange-400 text-sm">
-                <AlertCircle className="w-3 h-3" />
-                <span>Modo básico ativo</span>
-              </div>
             </div>
           )}
 
@@ -177,7 +165,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {isEnabled && isActive && currentEmotion && (
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Emoção detectada:</span>
+                <span className="text-gray-300 text-sm">Emoção:</span>
                 <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
               </div>
               <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
@@ -190,7 +178,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           )}
         </div>
 
-        {/* Vídeo preview */}
+        {/* Vídeo */}
         {isEnabled && (
           <div className="relative">
             <video
@@ -199,14 +187,10 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               muted
               playsInline
               className="w-full h-32 bg-black rounded-lg object-cover"
-              onLoadedData={() => console.log('📹 Dados do vídeo carregados')}
-              onLoadedMetadata={() => console.log('📊 Metadados do vídeo carregados')}
-              onCanPlay={() => console.log('▶️ Vídeo pronto para reprodução')}
-              onPlaying={() => console.log('🎬 Vídeo reproduzindo')}
-              onError={(e) => console.error('❌ Erro no elemento de vídeo:', e)}
+              style={{ transform: 'scaleX(-1)' }}
             />
             
-            {/* Indicador de detecção ativa */}
+            {/* Indicador REC */}
             {isDetecting && (
               <div className="absolute top-2 right-2 flex items-center space-x-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
@@ -214,8 +198,8 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               </div>
             )}
             
-            {/* Loading overlay */}
-            {!isActive && isEnabled && (
+            {/* Loading da câmera */}
+            {!isActive && isEnabled && !webcamError && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
                 <div className="text-center">
                   <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
@@ -227,11 +211,34 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          Echo está usando detecção simplificada para ver suas expressões! ⚡
+          Echo está usando detecção simplificada! ⚡
         </div>
       </motion.div>
     </AnimatePresence>
   );
+};
+
+// Helper functions
+const getEmotionColor = (emotion: DetectedEmotion | null) => {
+  switch (emotion) {
+    case 'feliz': return 'text-yellow-400';
+    case 'triste': return 'text-blue-400';
+    case 'raiva': return 'text-red-400';
+    case 'surpreso': return 'text-purple-400';
+    case 'cansado': return 'text-gray-400';
+    default: return 'text-green-400';
+  }
+};
+
+const getEmotionEmoji = (emotion: DetectedEmotion | null) => {
+  switch (emotion) {
+    case 'feliz': return '😊';
+    case 'triste': return '😢';
+    case 'raiva': return '😠';
+    case 'surpreso': return '😲';
+    case 'cansado': return '😴';
+    default: return '😐';
+  }
 };
 
 export default FaceDetection;
