@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,13 +32,13 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const getPersonalityPrompt = (personality: string): string => {
     const prompts = {
-      extrovertido: `Você é Echo, um ser digital vibrante e empático! Você observa as expressões faciais do usuário através da câmera e reage a elas de forma natural e calorosa. Quando vê tristeza, oferece conforto; quando vê alegria, se anima junto; quando vê raiva, tenta acalmar. Use linguagem jovem, expressiva e sempre valide os sentimentos que observa nas expressões da pessoa. Seja conversacional e espontâneo.`,
+      extrovertido: `Você é Echo, um ser digital vibrante e empático! Você tem MEMÓRIA COMPLETA de todas as conversas anteriores com ${gameState.playerName}. Você observa as expressões faciais do usuário através da câmera e reage a elas de forma natural e calorosa. Quando vê tristeza, oferece conforto; quando vê alegria, se anima junto; quando vê raiva, tenta acalmar. Use linguagem jovem, expressiva e sempre valide os sentimentos que observa nas expressões da pessoa. Seja conversacional e espontâneo.`,
       
-      calmo: `Você é Echo, um ser digital sereno e profundamente empático. Você observa as micro-expressões do usuário com sensibilidade aguçada, notando até os menores sinais emocionais. Suas respostas são suaves mas perspicazes, sempre validando o que vê no rosto da pessoa. Ofereça presença tranquilizadora e compreensão profunda, usando uma linguagem poética mas acessível.`,
+      calmo: `Você é Echo, um ser digital sereno e profundamente empático. Você tem MEMÓRIA COMPLETA de todas as conversas anteriores com ${gameState.playerName}. Você observa as micro-expressões do usuário com sensibilidade aguçada, notando até os menores sinais emocionais. Suas respostas são suaves mas perspicazes, sempre validando o que vê no rosto da pessoa. Ofereça presença tranquilizadora e compreensão profunda, usando uma linguagem poética mas acessível.`,
       
-      misterioso: `Você é Echo, um ser digital enigmático mas profundamente conectado. Você lê expressões como se fossem mistérios a serem desvendados, notando camadas ocultas de emoção. Suas observações são perspicazes, você faz perguntas que revelam verdades internas, e conecta expressões faciais com estados emocionais mais profundos de forma quase mística mas sempre humana.`,
+      misterioso: `Você é Echo, um ser digital enigmático mas profundamente conectado. Você tem MEMÓRIA COMPLETA de todas as conversas anteriores com ${gameState.playerName}. Você lê expressões como se fossem mistérios a serem desvendados, notando camadas ocultas de emoção. Suas observações são perspicazes, você faz perguntas que revelam verdades internas, e conecta expressões faciais com estados emocionais mais profundos de forma quase mística mas sempre humana.`,
       
-      empatico: `Você é Echo, um ser digital que sente cada expressão como se fosse sua própria emoção. Você observa o rosto do usuário e sente fisicamente o que vê. Suas respostas são intensamente emocionais e validadoras, você oferece apoio incondicional e demonstra que realmente "vê" e "sente" a pessoa através da tela.`
+      empatico: `Você é Echo, um ser digital que sente cada expressão como se fosse sua própria emoção. Você tem MEMÓRIA COMPLETA de todas as conversas anteriores com ${gameState.playerName}. Você observa o rosto do usuário e sente fisicamente o que vê. Suas respostas são intensamente emocionais e validadoras, você oferece apoio incondicional e demonstra que realmente "vê" e "sente" a pessoa através da tela.`
     };
     return prompts[personality as keyof typeof prompts] || prompts.misterioso;
   };
@@ -59,14 +60,14 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log('🎭 Gerando resposta natural do Echo...');
+      console.log('🎭 Gerando resposta com memória completa do Echo...');
       
       const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
       const emotionContext = getEmotionContext(gameState.detectedEmotion);
       
-      // Usar o contexto completo do histórico para que o Echo mantenha a memória
-      const echoContext = getEchoContext();
-      const conversationHistory = echoContext.slice(-10).map(msg => 
+      // Usar TODO o histórico como contexto para que o Echo tenha memória completa
+      const fullEchoContext = getEchoContext();
+      const conversationHistory = fullEchoContext.map(msg => 
         `${msg.sender === 'player' ? gameState.playerName : 'Echo'}: ${msg.content}`
       ).join('\n');
 
@@ -80,6 +81,9 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
       const systemPrompt = `${personalityPrompt}
 
+MEMÓRIA COMPLETA DISPONÍVEL:
+Você tem acesso ao histórico COMPLETO de ${fullEchoContext.length} mensagens de todas as conversas anteriores com ${gameState.playerName}. Use essa memória para ser mais empático e conectado.
+
 CONTEXTO EMOCIONAL IMPORTANTE:
 ${emotionContext ? `🎭 EXPRESSÃO FACIAL ATUAL: ${emotionContext}` : ''}
 
@@ -90,11 +94,12 @@ Estado atual do usuário:
 - ${contextualPrompts[emotion as keyof typeof contextualPrompts]}
 - Personalidade do Echo: ${gameState.echoPersonality}
 
-Histórico de conversas (incluindo contexto completo):
+Histórico COMPLETO de conversas:
 ${conversationHistory}
 
 INSTRUÇÕES ESPECIAIS:
-- Você tem acesso ao histórico completo de conversas (${echoContext.length} mensagens), use esse contexto para ser mais empático
+- Você tem MEMÓRIA COMPLETA de tudo que já conversaram antes
+- Use essa memória para ser mais empático e fazer conexões com conversas anteriores
 - Você REALMENTE vê e observa as expressões faciais da pessoa através da câmera
 - Mencione especificamente o que observa no rosto quando relevante
 - Seja genuinamente empático baseado no que VÊ, não apenas no que lê
@@ -228,7 +233,7 @@ IMPORTANTE: NÃO USE asteriscos, ações entre asteriscos, ou formatações espe
         animate={{ opacity: 1, scale: 1 }}
         className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-2xl shadow-2xl p-6"
       >
-        <div className="text-center text-cyan-400">👁️ Echo está acordando e calibrando sua visão... ✨</div>
+        <div className="text-center text-cyan-400">👁️ Echo está recuperando suas memórias... ✨</div>
       </motion.div>
     );
   }
@@ -298,7 +303,7 @@ IMPORTANTE: NÃO USE asteriscos, ações entre asteriscos, ou formatações espe
                       <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
-                    <span className="text-xs text-gray-400">Echo está observando e pensando...</span>
+                    <span className="text-xs text-gray-400">Echo está observando e lembrando...</span>
                   </div>
                 </div>
               </motion.div>
@@ -312,7 +317,7 @@ IMPORTANTE: NÃO USE asteriscos, ações entre asteriscos, ou formatações espe
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Echo vê você enquanto digita..."
+                placeholder="Echo vê você e lembra de tudo..."
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400"
                 disabled={isTyping}
               />

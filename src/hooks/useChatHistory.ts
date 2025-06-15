@@ -16,16 +16,12 @@ export const useChatHistory = (playerName: string) => {
   const [fullHistory, setFullHistory] = useState<ChatMessage[]>([]); // Histórico completo em memória
   const { user } = useAuth();
 
-  // Verificar se é uma nova sessão (primeira vez no dia ou site reaberto)
-  const isNewSession = () => {
-    const lastSession = localStorage.getItem(`last_session_${user?.id}_${playerName}`);
-    const today = new Date().toDateString();
-    
-    if (!lastSession || lastSession !== today) {
-      localStorage.setItem(`last_session_${user?.id}_${playerName}`, today);
-      return true;
-    }
-    return false;
+  // Sempre iniciar uma nova sessão visual quando entrar no site
+  const initializeNewVisualSession = () => {
+    // Marcar que uma nova sessão foi iniciada
+    const sessionKey = `session_${user?.id}_${playerName}_${Date.now()}`;
+    localStorage.setItem(`current_session_${user?.id}_${playerName}`, sessionKey);
+    return true;
   };
 
   // Carregar histórico de conversas do Supabase
@@ -64,25 +60,26 @@ export const useChatHistory = (playerName: string) => {
           timestamp: new Date(msg.created_at)
         }));
         
-        // Sempre carregar o histórico completo em memória
+        // SEMPRE carregar o histórico completo em memória para contexto do Echo
         setFullHistory(loadedMessages);
         
-        // Se é uma nova sessão, mostrar apenas mensagem de boas-vindas
-        if (isNewSession()) {
-          const welcomeMessage = {
-            id: Date.now().toString(),
-            content: `Olá novamente, ${playerName}. Posso sentir que você voltou... Como se sente hoje?`,
-            sender: 'echo' as const,
-            timestamp: new Date()
-          };
-          setMessages([welcomeMessage]);
-          // Adicionar a mensagem de boas-vindas ao histórico completo também
-          setFullHistory(prev => [...prev, welcomeMessage]);
-          await saveChatMessage(welcomeMessage);
-        } else {
-          // Mostrar as últimas 10 mensagens para não sobrecarregar a interface
-          setMessages(loadedMessages.slice(-10));
-        }
+        // SEMPRE limpar o chat visual e começar com mensagem de boas-vindas
+        initializeNewVisualSession();
+        
+        const welcomeMessage = {
+          id: Date.now().toString(),
+          content: `Olá ${playerName}. Posso sentir que você voltou... Como se sente agora?`,
+          sender: 'echo' as const,
+          timestamp: new Date()
+        };
+        
+        // Mostrar apenas a mensagem de boas-vindas no chat visual
+        setMessages([welcomeMessage]);
+        
+        // Adicionar a mensagem de boas-vindas ao histórico completo também
+        setFullHistory(prev => [...prev, welcomeMessage]);
+        await saveChatMessage(welcomeMessage);
+        
       } else {
         // Primeira conversa
         const initialMessage = {
@@ -130,24 +127,25 @@ export const useChatHistory = (playerName: string) => {
   };
 
   const addMessage = async (message: ChatMessage) => {
-    // Adicionar à exibição atual
+    // Adicionar à exibição atual (chat visual)
     setMessages(prev => [...prev, message]);
     // Adicionar ao histórico completo em memória
     setFullHistory(prev => [...prev, message]);
     await saveChatMessage(message);
   };
 
-  // Função para obter contexto completo para o Echo (últimas 20 mensagens do histórico completo)
+  // Função para obter contexto completo para o Echo (todas as mensagens do histórico)
   const getEchoContext = () => {
-    return fullHistory.slice(-20);
+    // Retornar todo o histórico para que o Echo tenha contexto completo
+    return fullHistory;
   };
 
   return {
-    messages,
+    messages, // Chat visual (sempre limpo ao entrar)
     setMessages,
     addMessage,
     isLoading,
-    getEchoContext, // Para que o Echo tenha acesso ao contexto completo
+    getEchoContext, // Histórico completo para contexto do Echo
     fullHistoryLength: fullHistory.length // Para debug/estatísticas
   };
 };
