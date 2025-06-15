@@ -66,22 +66,14 @@ export class CharacterSprites {
       this.drawCharacterOnCanvas(context, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
     });
 
-    // Create texture from canvas first, then add sprite sheet
+    // Create sprite sheet directly from canvas
     try {
-      // First, add the canvas as a texture
-      const texture = scene.textures.addCanvas(framesKey, canvas);
+      scene.textures.addSpriteSheet(framesKey, canvas, {
+        frameWidth: frameWidth,
+        frameHeight: frameHeight
+      });
       
-      if (texture) {
-        // Now create the sprite sheet from the texture
-        scene.textures.addSpriteSheet(framesKey, texture.source[0].image, {
-          frameWidth: frameWidth,
-          frameHeight: frameHeight
-        });
-        
-        console.log('Successfully created texture and sprite sheet:', framesKey);
-      } else {
-        console.error('Failed to create texture from canvas:', framesKey);
-      }
+      console.log('Successfully created sprite sheet:', framesKey);
     } catch (error) {
       console.error('Error creating sprite sheet:', framesKey, error);
     }
