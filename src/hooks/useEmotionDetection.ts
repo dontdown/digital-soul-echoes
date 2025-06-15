@@ -104,9 +104,11 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     console.log(`🎬 Iniciando detecção com ${currentModel}...`);
     
     if (currentModel === 'mediapipe') {
+      console.log('🎯 Iniciando MediaPipe...');
       mediaPipe.startDetection(videoElement);
       
     } else if (currentModel === 'tensorflow') {
+      console.log('🎯 Iniciando TensorFlow...');
       tensorFlow.startDetection(videoElement);
       
     } else if (currentModel === 'simulated') {

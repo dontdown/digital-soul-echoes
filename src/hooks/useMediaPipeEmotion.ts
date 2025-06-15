@@ -61,6 +61,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
 
   const analyzeEmotionFromBlendshapes = useCallback((blendshapes: any[]): { emotion: MediaPipeEmotion; confidence: number } => {
     if (!blendshapes || blendshapes.length === 0) {
+      console.log('⚠️ Nenhum blendshape detectado');
       return { emotion: 'neutro', confidence: 0.5 };
     }
 
@@ -72,30 +73,50 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       shapeMap[shape.categoryName] = shape.score;
     });
 
-    // Calcular scores individuais de emoções primeiro
+    // Log dos principais blendshapes para debug
+    console.log('📊 Blendshapes principais:', {
+      mouthSmileLeft: shapeMap['mouthSmileLeft']?.toFixed(3),
+      mouthSmileRight: shapeMap['mouthSmileRight']?.toFixed(3),
+      mouthFrownLeft: shapeMap['mouthFrownLeft']?.toFixed(3),
+      mouthFrownRight: shapeMap['mouthFrownRight']?.toFixed(3),
+      browDownLeft: shapeMap['browDownLeft']?.toFixed(3),
+      browDownRight: shapeMap['browDownRight']?.toFixed(3),
+      eyeWideLeft: shapeMap['eyeWideLeft']?.toFixed(3),
+      eyeWideRight: shapeMap['eyeWideRight']?.toFixed(3),
+      jawOpen: shapeMap['jawOpen']?.toFixed(3),
+      eyeBlinkLeft: shapeMap['eyeBlinkLeft']?.toFixed(3),
+      eyeBlinkRight: shapeMap['eyeBlinkRight']?.toFixed(3)
+    });
+
+    // Calcular scores com thresholds mais baixos para melhor detecção
     const felizScore = Math.max(
-      (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0),
+      (shapeMap['mouthSmileLeft'] || 0) * 2,
+      (shapeMap['mouthSmileRight'] || 0) * 2,
       (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0)
     );
     
     const tristeScore = Math.max(
-      (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0),
+      (shapeMap['mouthFrownLeft'] || 0) * 2,
+      (shapeMap['mouthFrownRight'] || 0) * 2,
       (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0)
     );
     
     const surprsoScore = Math.max(
       (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0),
-      (shapeMap['jawOpen'] || 0) * 0.8
+      (shapeMap['jawOpen'] || 0) * 1.5,
+      (shapeMap['browOuterUpLeft'] || 0) + (shapeMap['browOuterUpRight'] || 0)
     );
     
     const raivaScore = Math.max(
       (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0),
-      (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0)
+      (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0),
+      (shapeMap['browLowererLeft'] || 0) + (shapeMap['browLowererRight'] || 0)
     );
     
     const cansadoScore = Math.max(
       (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0),
-      (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0)
+      (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0),
+      (shapeMap['upperLidRaiserLeft'] || 0) + (shapeMap['upperLidRaiserRight'] || 0)
     );
 
     // Criar objeto de emoções com os scores calculados
@@ -105,22 +126,34 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       surpreso: surprsoScore,
       raiva: raivaScore,
       cansado: cansadoScore,
-      neutro: 1 - Math.max(felizScore, tristeScore, surprsoScore, raivaScore, cansadoScore)
+      neutro: 0.3 // Score base para neutro
     };
+
+    // Log dos scores calculados
+    console.log('🎭 Scores de emoções:', {
+      feliz: emotions.feliz.toFixed(3),
+      triste: emotions.triste.toFixed(3),
+      surpreso: emotions.surpreso.toFixed(3),
+      raiva: emotions.raiva.toFixed(3),
+      cansado: emotions.cansado.toFixed(3),
+      neutro: emotions.neutro.toFixed(3)
+    });
 
     // Encontrar a emoção com maior pontuação
     let maxEmotion: MediaPipeEmotion = 'neutro';
     let maxScore = emotions.neutro;
 
     Object.entries(emotions).forEach(([emotion, score]) => {
-      if (score > maxScore) {
+      if (score > maxScore && score > 0.1) { // Threshold mínimo de 0.1
         maxEmotion = emotion as MediaPipeEmotion;
         maxScore = score;
       }
     });
 
     // Normalizar confiança para 0-1
-    const normalizedConfidence = Math.min(maxScore * 3, 1);
+    const normalizedConfidence = Math.min(Math.max(maxScore * 2, 0.1), 1);
+
+    console.log(`🎯 Emoção detectada: ${maxEmotion} (confiança: ${normalizedConfidence.toFixed(3)})`);
 
     return { 
       emotion: maxEmotion, 
@@ -147,9 +180,10 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
         
         console.log(`😊 MediaPipe detectou: ${emotion} (${Math.round(conf * 100)}%)`);
       } else {
-        // Se não detectar rosto, definir como neutro
+        // Se não detectar rosto, manter como neutro mas com baixa confiança
+        console.log('👤 Nenhum rosto detectado');
         setCurrentEmotion('neutro');
-        setConfidence(0.3);
+        setConfidence(0.2);
       }
       
     } catch (err) {
@@ -170,8 +204,13 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     setIsDetecting(true);
     console.log('🎬 Iniciando detecção MediaPipe...');
     
-    processFrame(videoElement);
-  }, [isModelLoaded, processFrame]);
+    // Aguardar um frame antes de iniciar para garantir que o vídeo está pronto
+    setTimeout(() => {
+      if (isDetecting) {
+        processFrame(videoElement);
+      }
+    }, 100);
+  }, [isModelLoaded, processFrame, isDetecting]);
 
   const stopDetection = useCallback(() => {
     setIsDetecting(false);
