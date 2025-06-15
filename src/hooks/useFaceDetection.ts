@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js';
 
@@ -69,7 +68,7 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
 
   const mapFaceApiToEmotion = (expressions: faceapi.FaceExpressions): FaceDetectionResult => {
     // Mapear expressões do face-api.js para nossas emoções
-    const emotionScores = {
+    const emotionScores: Record<DetectedEmotion, number> = {
       feliz: expressions.happy,
       triste: expressions.sad,
       raiva: expressions.angry,
@@ -79,12 +78,17 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     };
 
     // Encontrar a emoção com maior confiança
-    const [emotion, confidence] = Object.entries(emotionScores).reduce(
-      (max, [key, value]) => value > max[1] ? [key as DetectedEmotion, value] : max,
-      ['neutro' as DetectedEmotion, 0]
-    );
+    let bestEmotion: DetectedEmotion = 'neutro';
+    let bestConfidence = 0;
 
-    return { emotion, confidence };
+    for (const [emotion, confidence] of Object.entries(emotionScores) as [DetectedEmotion, number][]) {
+      if (confidence > bestConfidence) {
+        bestEmotion = emotion;
+        bestConfidence = confidence;
+      }
+    }
+
+    return { emotion: bestEmotion, confidence: bestConfidence };
   };
 
   const smoothEmotionDetection = (newResult: FaceDetectionResult): FaceDetectionResult | null => {
