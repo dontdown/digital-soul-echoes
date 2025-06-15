@@ -19,39 +19,85 @@ export const useWebcam = (): UseWebcamReturn => {
   const startWebcam = async () => {
     try {
       setError(null);
-      console.log('Iniciando webcam...');
+      console.log('Solicitando acesso à webcam...');
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          width: 640, 
-          height: 480,
+          width: { ideal: 640, max: 1280 }, 
+          height: { ideal: 480, max: 720 },
           facingMode: 'user'
         },
         audio: false
       });
 
+      console.log('Stream da webcam obtida:', mediaStream);
       setStream(mediaStream);
-      setIsActive(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play();
-        console.log('Webcam iniciada com sucesso');
+        
+        // Aguardar o vídeo carregar completamente
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error('Elemento de vídeo não encontrado'));
+            return;
+          }
+
+          const video = videoRef.current;
+          
+          const onLoadedData = () => {
+            console.log('Dados do vídeo carregados');
+            video.removeEventListener('loadeddata', onLoadedData);
+            video.removeEventListener('error', onError);
+            setIsActive(true);
+            resolve();
+          };
+
+          const onError = (e: Event) => {
+            console.error('Erro ao carregar vídeo:', e);
+            video.removeEventListener('loadeddata', onLoadedData);
+            video.removeEventListener('error', onError);
+            reject(new Error('Erro ao carregar vídeo'));
+          };
+
+          video.addEventListener('loadeddata', onLoadedData);
+          video.addEventListener('error', onError);
+          
+          video.play().catch(reject);
+        });
+
+        console.log('Webcam iniciada e vídeo reproduzindo com sucesso');
       }
     } catch (err) {
       console.error('Erro ao acessar webcam:', err);
       setError('Não foi possível acessar a câmera. Verifique as permissões.');
       setIsActive(false);
+      
+      // Limpar stream em caso de erro
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
     }
   };
 
   const stopWebcam = () => {
+    console.log('Parando webcam...');
+    
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log('Track parada:', track.kind);
+      });
       setStream(null);
-      setIsActive(false);
-      console.log('Webcam parada');
     }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    setIsActive(false);
+    console.log('Webcam parada completamente');
   };
 
   useEffect(() => {

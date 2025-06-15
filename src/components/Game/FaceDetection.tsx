@@ -31,25 +31,30 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     if (isVisible) {
       loadModels();
     }
-  }, [isVisible]);
+  }, [isVisible, loadModels]);
 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
       try {
+        console.log('Iniciando webcam...');
         await startWebcam();
         setIsEnabled(true);
         toast.success('Detecção facial ativada! (Modo simplificado)');
         
-        // Aguardar um pouco para o vídeo carregar
+        // Aguardar mais tempo para o vídeo carregar completamente
         setTimeout(() => {
           if (videoRef.current && isModelLoaded) {
+            console.log('Iniciando detecção...');
             startDetection(videoRef.current);
           }
-        }, 1000);
+        }, 2000);
       } catch (err) {
+        console.error('Erro ao ativar câmera:', err);
         toast.error('Erro ao ativar câmera');
+        setIsEnabled(false);
       }
     } else {
+      console.log('Parando webcam...');
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
@@ -57,11 +62,17 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   };
 
+  // Iniciar detecção quando vídeo estiver ativo
   useEffect(() => {
-    if (isActive && videoRef.current && isModelLoaded && !isDetecting) {
-      startDetection(videoRef.current);
+    if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
+      console.log('Auto-iniciando detecção...');
+      setTimeout(() => {
+        if (videoRef.current && isActive) {
+          startDetection(videoRef.current);
+        }
+      }, 1000);
     }
-  }, [isActive, isModelLoaded]);
+  }, [isActive, isModelLoaded, isDetecting, isEnabled, startDetection]);
 
   const getEmotionColor = (emotion: DetectedEmotion | null) => {
     switch (emotion) {
@@ -128,6 +139,13 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             </div>
           )}
 
+          {isEnabled && !isActive && (
+            <div className="flex items-center space-x-2 text-yellow-400 text-sm">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span>Carregando câmera...</span>
+            </div>
+          )}
+
           {(webcamError || detectionError) && (
             <div className="flex items-center space-x-2 text-orange-400 text-sm">
               <AlertCircle className="w-3 h-3" />
@@ -160,7 +178,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           )}
         </div>
 
-        {/* Vídeo preview pequeno */}
+        {/* Vídeo preview */}
         {isEnabled && (
           <div className="relative">
             <video
@@ -169,10 +187,17 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               muted
               playsInline
               className="w-full h-32 bg-black rounded-lg object-cover"
+              onLoadedData={() => console.log('Vídeo carregado')}
+              onError={(e) => console.error('Erro no vídeo:', e)}
             />
             {isDetecting && (
               <div className="absolute top-2 right-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+            )}
+            {!isActive && isEnabled && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                <div className="text-white text-sm">Carregando...</div>
               </div>
             )}
           </div>
