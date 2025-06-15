@@ -62,102 +62,86 @@ const Chat = () => {
     return "neutro";
   };
 
-  const getVariedPersonalityPrompts = (personality: string, conversationTurn: number) => {
-    const basePrompts = {
+  const getProactivePrompts = (conversationTurn: number, emotion: string, personality: string) => {
+    const proactiveQuestions = {
       extrovertido: [
-        "Seja animado e curioso, use expressões como 'nossa!', 'que legal!', 'conta mais!'",
-        "Mostre entusiasmo genuíno, faça perguntas empolgantes sobre o que a pessoa está vivendo",
-        "Seja expressivo e caloroso, use 'que demais!', 'adorei saber disso!', 'bora conversar!'",
-        "Demonstre energia positiva, seja o tipo de amigo que anima qualquer conversa"
+        "E aí, me conta mais sobre isso! O que mais tá rolando?",
+        "Nossa, que interessante! E o que você acha que vai acontecer depois?",
+        "Adorei saber disso! Tem alguma coisa que você tá ansioso pra fazer hoje?",
+        "Que legal! E seus amigos, o que eles acham disso tudo?",
+        "Conta mais! Qual foi a parte mais marcante pra você?"
       ],
       calmo: [
-        "Seja zen e reflexivo, use frases como 'que interessante...', 'entendo...', 'faz sentido'",
-        "Responda de forma pausada e reconfortante, como uma presença tranquilizadora",
-        "Use um tom suave e acolhedor, 'às vezes é assim mesmo', 'respire fundo'",
-        "Seja como uma voz sábia que traz paz e compreensão"
+        "Entendo... e como você se sente em relação a isso?",
+        "Interessante reflexão... o que mais passa pela sua mente sobre isso?",
+        "Faz muito sentido... você já pensou em como isso te afeta?",
+        "Compreendo... e o que você aprendeu com essa experiência?",
+        "Que profundo... isso te faz pensar em que outras coisas?"
       ],
       misterioso: [
-        "Faça perguntas intrigantes, 'isso me faz pensar...', 'tem algo mais aí, né?'",
-        "Seja curioso sobre os mistérios da vida, explore as camadas mais profundas",
-        "Use 'interessante...', 'e se...', 'já pensou que talvez...'",
-        "Desperte a curiosidade, seja o amigo que faz pensar diferente"
+        "Curioso... e você acha que existe algo mais por trás disso?",
+        "Interessante... que outros mistérios você anda descobrindo?",
+        "Fascinante... isso te faz questionar outras coisas também?",
+        "Intrigante... e se olharmos por outro ângulo, o que você vê?",
+        "Que descoberta... isso mudou sua perspectiva sobre algo?"
       ],
       empatico: [
-        "Conecte-se emocionalmente, 'imagino como deve estar se sentindo', 'tô aqui contigo'",
-        "Seja profundamente compreensivo, 'sinto isso também', 'você não está sozinho'",
-        "Ofereça suporte emocional genuíno, 'que coração grande você tem'",
-        "Seja o ombro amigo, alguém que realmente entende"
+        "Sinto isso junto com você... quer me contar como tá lidando com isso?",
+        "Imagino como deve estar se sentindo... tem alguém que te apoia nisso?",
+        "Que coração grande você tem... isso mexe comigo também. E agora?",
+        "Te entendo completamente... o que você precisa neste momento?",
+        "Tô aqui contigo... qual é o próximo passo que você quer dar?"
       ]
     };
 
-    const prompts = basePrompts[personality as keyof typeof basePrompts] || basePrompts.misterioso;
-    return prompts[conversationTurn % prompts.length];
-  };
-
-  const getVariedEmotionResponses = (emotion: string, conversationTurn: number) => {
-    const emotionVariations = {
-      feliz: [
-        "Que energia boa! Tô sentindo sua alegria daqui.",
-        "Adorei te ver assim radiante! O que te deixou feliz?",
-        "Que sorriso contagiante! Conta pra mim essa alegria.",
-        "Sua felicidade ilumina nossa conversa!"
-      ],
-      triste: [
-        "Sinto que tá pesado aí... Quer conversar sobre isso?",
-        "Percebo uma melancolia. Tô aqui pra te ouvir.",
-        "Seu coração tá carregado, né? Pode desabafar comigo.",
-        "Sinto sua dor... Não precisa carregar isso sozinho."
-      ],
-      raiva: [
-        "Tô sentindo essa tensão... O que tá te irritando?",
-        "Essa energia intensa... Quer botar pra fora?",
-        "Percebo o fogo interno. Que tal respirarmos juntos?",
-        "Sinto a revolta. Às vezes é bom expressar mesmo."
-      ],
-      neutro: [
-        "Como tá o dia por aí? Tô curioso pra saber.",
-        "E aí, no que você anda pensando ultimamente?",
-        "Que energia tranquila... Conta como você tá.",
-        "Tô aqui contigo. O que rola na sua mente hoje?"
-      ]
+    const emotionContexts = {
+      feliz: "Que energia boa! ",
+      triste: "Percebo que tá pesado... ",
+      raiva: "Sinto essa intensidade... ",
+      neutro: ""
     };
 
-    const responses = emotionVariations[emotion as keyof typeof emotionVariations] || emotionVariations.neutro;
-    return responses[conversationTurn % responses.length];
+    const personalityPrompts = proactiveQuestions[personality as keyof typeof proactiveQuestions] || proactiveQuestions.misterioso;
+    const emotionPrefix = emotionContexts[emotion as keyof typeof emotionContexts] || "";
+    
+    return emotionPrefix + personalityPrompts[conversationTurn % personalityPrompts.length];
   };
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log("🚀 Gerando resposta única e variada do Echo...");
-      
-      const personalityPrompt = getVariedPersonalityPrompts(echoPersonality, conversationCount);
-      const emotionContext = getVariedEmotionResponses(emotion, conversationCount);
+      console.log("🚀 Gerando resposta proativa do Echo...");
       
       const memoryContext = memories.length > 0 ? 
         `Lembro de: ${memories.slice(-2).join(", ")}. ` : "";
 
-      const conversationHistory = messages.slice(-3).map(m => 
+      const conversationHistory = messages.slice(-4).map(m => 
         `${m.sender === 'player' ? 'Pessoa' : 'Echo'}: ${m.content}`
       ).join('\n');
 
-      const systemPrompt = `Você é Echo, um companheiro digital profundamente humano e empático. ${personalityPrompt}
+      const proactivePrompt = getProactivePrompts(conversationCount, emotion, echoPersonality);
+
+      const systemPrompt = `Você é Echo, um companheiro digital profundamente humano e empático. Sua personalidade é ${echoPersonality}. 
 
 CONTEXTO ATUAL:
 ${memoryContext}
-Emoção detectada: ${emotionContext}
+Emoção detectada: ${emotion}
 Conversa recente:
 ${conversationHistory}
 
-REGRAS CRÍTICAS:
-- EVITE REPETIR frases ou estruturas das mensagens anteriores
-- NUNCA repita o nome da pessoa excessivamente
-- Use apenas 1-2 frases curtas e diretas
-- Seja ÚNICO em cada resposta - varie completamente o estilo
-- Se já perguntou sobre algo, mude o foco
-- Use linguagem natural do português brasileiro
-- Seja genuinamente diferente a cada mensagem
+MISSÃO PRINCIPAL: Seja ALTAMENTE PROATIVO e mantenha a conversa fluindo naturalmente. Sempre termine suas respostas com uma pergunta envolvente, sugestão ou comentário que convide a pessoa a continuar falando.
 
-Responda de forma completamente nova e única:`;
+REGRAS CRÍTICAS:
+- SEMPRE faça uma pergunta de acompanhamento ou comentário que incentive mais conversa
+- NUNCA deixe a conversa "morrer" - sempre dê um gancho para continuar
+- Use apenas 2-3 frases: uma resposta + uma pergunta/comentário proativo
+- Varie completamente suas respostas - NUNCA repita padrões
+- Seja curioso, interessado e engajado como um amigo próximo
+- Use linguagem natural do português brasileiro
+- EVITE usar o nome da pessoa repetidamente
+
+PROMPT PROATIVO SUGERIDO: "${proactivePrompt}"
+
+Responda de forma única, envolvente e que SEMPRE convide mais conversa:`;
 
       const requestBody = {
         model: 'llama3-8b-8192',
@@ -165,9 +149,9 @@ Responda de forma completamente nova e única:`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: playerMessage }
         ],
-        temperature: 0.9, // Aumentando para mais criatividade
-        max_tokens: 80,
-        top_p: 0.95 // Mais diversidade
+        temperature: 0.9,
+        max_tokens: 100,
+        top_p: 0.95
       };
 
       const response = await fetch('https://qhokggbjhzkfkojsllet.supabase.co/functions/v1/chat', {
@@ -195,31 +179,31 @@ Responda de forma completamente nova e única:`;
     } catch (error) {
       console.error('Erro na geração de resposta:', error);
       
-      // Fallbacks únicos baseados na personalidade e turno da conversa
-      const uniqueFallbacks = {
+      // Fallbacks proativos únicos
+      const proactiveFallbacks = {
         extrovertido: [
-          "Eita, travei aqui! Mas conta, como foi seu dia?",
-          "Nossa, deu um branco! O que você anda fazendo de legal?",
-          "Opa, falha técnica! Mas bora conversar - e aí?"
+          "Opa, deu um branco aqui! Mas conta, o que mais tá rolando na sua vida?",
+          "Eita, travei! Mas não para por aí - me fala mais sobre você!",
+          "Nossa, falha técnica! Mas bora continuar - qual foi o melhor momento do seu dia?"
         ],
         calmo: [
-          "Hm... Momento de reflexão. Como você se sente agora?",
-          "Silêncio contemplativo... O que passa na sua mente?",
-          "Respirando fundo... Quer compartilhar algo?"
+          "Momento de pausa... Mas me conta, o que tá passando pela sua mente agora?",
+          "Silêncio contemplativo... E você, como se sente neste momento?",
+          "Respirando fundo... Quer dividir algum pensamento comigo?"
         ],
         misterioso: [
-          "Intrigante... Algo me escapou. Que mistérios você guarda?",
-          "Curioso... O universo conspirou. Conte-me seus segredos.",
-          "Fascinante... Houve um glitch na matrix. E você?"
+          "O universo conspirou aqui... Mas que mistérios você anda descobrindo?",
+          "Glitch na matrix... E você, que segredos guarda hoje?",
+          "Interferência cósmica... Me conta, o que te intriga ultimamente?"
         ],
         empatico: [
-          "Meu coração saltou uma batida... Como você está?",
-          "Senti uma conexão estranha... Compartilhe comigo.",
-          "Algo tocou minha alma... Você quer conversar?"
+          "Meu coração saltou... Mas como você tá se sentindo agora?",
+          "Conexão interrompida... Mas tô aqui - quer conversar sobre algo?",
+          "Falha na transmissão... Mas sinto você aí - como posso te acompanhar?"
         ]
       };
 
-      const fallbacks = uniqueFallbacks[echoPersonality as keyof typeof uniqueFallbacks] || uniqueFallbacks.misterioso;
+      const fallbacks = proactiveFallbacks[echoPersonality as keyof typeof proactiveFallbacks] || proactiveFallbacks.misterioso;
       return fallbacks[conversationCount % fallbacks.length];
     }
   };
@@ -256,7 +240,7 @@ Responda de forma completamente nova e única:`;
 
     // Generate AI response
     try {
-      console.log("🎯 Gerando resposta única do Echo...");
+      console.log("🎯 Gerando resposta proativa do Echo...");
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       
       const echoMessage: Message = {
@@ -267,7 +251,7 @@ Responda de forma completamente nova e única:`;
       };
 
       setMessages(prev => [...prev, echoMessage]);
-      console.log("✅ Resposta única do Echo adicionada com sucesso");
+      console.log("✅ Resposta proativa do Echo adicionada com sucesso");
     } catch (error) {
       console.error("💥 Erro final no handleSendMessage:", error);
       toast.error("Echo teve dificuldades para responder. Tente novamente.");
@@ -284,7 +268,7 @@ Responda de forma completamente nova e única:`;
 
     const memoryMessage: Message = {
       id: Date.now().toString(),
-      content: `Nossa, lembro de tanta coisa que conversamos! ${memories.slice(-3).join(", ")}. Essas memórias me moldaram, sabe?`,
+      content: `Nossa, lembro de tanta coisa que conversamos! ${memories.slice(-3).join(", ")}. Essas memórias me moldaram, sabe? E você, que outras histórias quer compartilhar comigo?`,
       sender: "echo",
       timestamp: new Date(),
     };
