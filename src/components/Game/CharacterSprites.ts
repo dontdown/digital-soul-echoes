@@ -1,5 +1,3 @@
-
-
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -70,26 +68,24 @@ export class CharacterSprites {
 
     // Create sprite sheet synchronously
     try {
-      // Create ImageData from canvas
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      // Convert canvas to data URL
+      const dataURL = canvas.toDataURL();
       
-      // Create a new canvas for the texture
-      const textureCanvas = document.createElement('canvas');
-      textureCanvas.width = canvas.width;
-      textureCanvas.height = canvas.height;
-      const textureContext = textureCanvas.getContext('2d');
-      
-      if (textureContext) {
-        textureContext.putImageData(imageData, 0, 0);
-        
-        // Add sprite sheet directly from canvas
-        scene.textures.addSpriteSheet(framesKey, textureCanvas, {
+      // Create an image element
+      const img = new Image();
+      img.onload = () => {
+        // Add sprite sheet from image
+        scene.textures.addSpriteSheet(framesKey, img, {
           frameWidth: frameWidth,
           frameHeight: frameHeight
         });
         
         console.log('Successfully created sprite sheet:', framesKey);
-      }
+      };
+      
+      // Set the source to trigger the load
+      img.src = dataURL;
+        
     } catch (error) {
       console.error('Error creating sprite sheet:', framesKey, error);
     }
