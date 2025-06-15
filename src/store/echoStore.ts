@@ -1,11 +1,11 @@
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface PlayerData {
   name: string;
   mood: string;
   preference: string;
-  model?: string;
 }
 
 interface EchoStore {
@@ -17,24 +17,39 @@ interface EchoStore {
   setEchoPersonality: (personality: string) => void;
   updateEchoMood: (mood: string) => void;
   addMemory: (memory: string) => void;
-  reset: () => void;
+  clearData: () => void;
 }
 
-export const useEchoStore = create<EchoStore>((set) => ({
-  playerData: null,
-  echoPersonality: 'misterioso',
-  echoMood: 'neutro',
-  memories: [],
-  setPlayerData: (data) => set({ playerData: data }),
-  setEchoPersonality: (personality) => set({ echoPersonality: personality }),
-  updateEchoMood: (mood) => set({ echoMood: mood }),
-  addMemory: (memory) => set((state) => ({ 
-    memories: [...state.memories, memory] 
-  })),
-  reset: () => set({ 
-    playerData: null, 
-    echoPersonality: 'misterioso', 
-    echoMood: 'neutro',
-    memories: []
-  }),
-}));
+export const useEchoStore = create<EchoStore>()(
+  persist(
+    (set, get) => ({
+      playerData: null,
+      echoPersonality: "misterioso",
+      echoMood: "neutro",
+      memories: [],
+      
+      setPlayerData: (data) => set({ playerData: data }),
+      
+      setEchoPersonality: (personality) => set({ echoPersonality: personality }),
+      
+      updateEchoMood: (mood) => set({ echoMood: mood }),
+      
+      addMemory: (memory) => {
+        const { memories } = get();
+        if (!memories.includes(memory)) {
+          set({ memories: [...memories, memory] });
+        }
+      },
+      
+      clearData: () => set({
+        playerData: null,
+        echoPersonality: "misterioso",
+        echoMood: "neutro",
+        memories: []
+      }),
+    }),
+    {
+      name: 'echo-storage',
+    }
+  )
+);

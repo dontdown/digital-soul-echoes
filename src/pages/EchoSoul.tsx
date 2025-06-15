@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -28,7 +27,6 @@ const EchoSoul = () => {
       playerName: playerData.name,
       playerMood: playerData.mood,
       playerPreference: playerData.preference,
-      playerModel: playerData.model || 'adventure', // fallback para dados antigos
       echoPersonality,
       echoMood,
       echoSprite: 'blue'
@@ -42,23 +40,16 @@ const EchoSoul = () => {
     if (!playerData) return;
 
     try {
-      const gameStateData = {
-        player_name: playerData.name,
-        player_mood: playerData.mood,
-        player_preference: playerData.preference,
-        // Removido player_model pois não existe na tabela
-        echo_personality: echoPersonality,
-        echo_mood: echoMood,
-        echo_sprite: 'blue'
-      };
-
-      console.log('Salvando estado do jogo:', gameStateData);
-
       await supabase
         .from('game_state')
-        .insert(gameStateData);
-        
-      console.log('Estado do jogo salvo com sucesso');
+        .insert({
+          player_name: playerData.name,
+          player_mood: playerData.mood,
+          player_preference: playerData.preference,
+          echo_personality: echoPersonality,
+          echo_mood: echoMood,
+          echo_sprite: 'blue'
+        });
     } catch (error) {
       console.error('Erro ao salvar estado do jogo:', error);
     }

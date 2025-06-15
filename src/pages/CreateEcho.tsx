@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,7 +17,6 @@ const CreateEcho = () => {
   const [playerName, setPlayerName] = useState("");
   const [mood, setMood] = useState("");
   const [preference, setPreference] = useState("");
-  const [playerModel, setPlayerModel] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,13 +44,12 @@ const CreateEcho = () => {
           player_name: playerName,
           player_mood: mood,
           player_preference: preference,
-          player_model: 'adventure',
           echo_personality: personality,
           echo_mood: 'neutro',
           echo_sprite: 'blue'
         });
 
-      setPlayerData({ name: playerName, mood, preference, model: 'adventure' });
+      setPlayerData({ name: playerName, mood, preference });
       setEchoPersonality(personality);
       
       toast.success("Echo criado com sucesso!");
@@ -90,7 +89,7 @@ const CreateEcho = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8 }}
-        className="bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative z-10"
+        className="bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl relative z-10"
       >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">

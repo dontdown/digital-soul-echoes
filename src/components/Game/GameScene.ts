@@ -1,11 +1,9 @@
 import Phaser from 'phaser';
-import { CharacterSprites } from './CharacterSprites';
 
 export interface GameState {
   playerName: string;
   playerMood: string;
   playerPreference: string;
-  playerModel: string;
   echoPersonality: string;
   echoMood: string;
   echoSprite: string;
@@ -35,12 +33,19 @@ export class GameScene extends Phaser.Scene {
     this.onMemoryTrigger = onMemoryTrigger;
   }
 
-  async preload() {
-    console.log('Preloading sprites for player model:', this.gameState.playerModel, 'and echo mood:', this.gameState.echoMood);
-    
-    // Criar sprites de forma síncrona e aguardar conclusão
-    await CharacterSprites.createPlayerSprite(this, this.gameState.playerModel);
-    await CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
+  preload() {
+    // Criar sprites como retângulos coloridos (placeholders)
+    this.add.graphics()
+      .fillStyle(0x4ade80)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('player', 32, 32);
+
+    // Sprite do Echo baseado no humor
+    const echoColor = this.getEchoColor();
+    this.add.graphics()
+      .fillStyle(echoColor)
+      .fillRect(0, 0, 32, 32)
+      .generateTexture('echo', 32, 32);
 
     // Obstáculos
     this.add.graphics()
@@ -62,41 +67,19 @@ export class GameScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.createObstacles();
 
-    // Criar jogador com o modelo escolhido
-    const playerTexture = `player_${this.gameState.playerModel}_frames`;
-    console.log('Looking for player texture:', playerTexture);
-    
-    if (this.textures.exists(playerTexture)) {
-      this.player = this.physics.add.sprite(100, 300, playerTexture, 0);
-      this.player.setCollideWorldBounds(true);
-      this.player.setScale(2.5); // Reduzido de 4 para 2.5
-      console.log('Player sprite created successfully');
-    } else {
-      console.error('Player texture not found:', playerTexture);
-      // Create a simple fallback sprite
-      this.createFallbackPlayer();
-    }
+    // Criar jogador
+    this.player = this.physics.add.sprite(100, 300, 'player');
+    this.player.setCollideWorldBounds(true);
+    this.player.setScale(1);
 
     // Criar Echo
-    const echoTexture = `echo_${this.gameState.echoMood}_frames`;
-    console.log('Looking for echo texture:', echoTexture);
-    
-    if (this.textures.exists(echoTexture)) {
-      this.echo = this.physics.add.sprite(400, 300, echoTexture, 0);
-      this.echo.setCollideWorldBounds(true);
-      this.echo.setScale(2.5); // Reduzido de 4 para 2.5
-      console.log('Echo sprite created successfully');
-    } else {
-      console.error('Echo texture not found:', echoTexture);
-      // Create a simple fallback sprite
-      this.createFallbackEcho();
-    }
+    this.echo = this.physics.add.sprite(400, 300, 'echo');
+    this.echo.setCollideWorldBounds(true);
+    this.echo.setScale(1);
 
     // Configurar física
-    if (this.player && this.echo) {
-      this.physics.add.collider(this.player, this.obstacles);
-      this.physics.add.collider(this.echo, this.obstacles);
-    }
+    this.physics.add.collider(this.player, this.obstacles);
+    this.physics.add.collider(this.echo, this.obstacles);
 
     // Configurar controles
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -128,13 +111,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.player && this.echo) {
-      this.handlePlayerMovement();
-      this.handleEchoMovement();
-      this.checkProximity();
-      this.handleInteraction();
-      this.updateProximityIndicator();
-    }
+    this.handlePlayerMovement();
+    this.handleEchoMovement();
+    this.checkProximity();
+    this.handleInteraction();
+    this.updateProximityIndicator();
   }
 
   private createBackground() {
@@ -142,6 +123,7 @@ export class GameScene extends Phaser.Scene {
     graphics.fillGradientStyle(0x1e1b4b, 0x1e1b4b, 0x312e81, 0x312e81);
     graphics.fillRect(0, 0, 800, 600);
 
+    // Adicionar "estrelas"
     for (let i = 0; i < 50; i++) {
       const x = Phaser.Math.Between(0, 800);
       const y = Phaser.Math.Between(0, 600);
@@ -151,11 +133,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createObstacles() {
+    // Árvores
     this.obstacles.create(200, 150, 'tree');
     this.obstacles.create(600, 100, 'tree');
     this.obstacles.create(150, 450, 'tree');
     this.obstacles.create(650, 500, 'tree');
 
+    // Rochas
     this.obstacles.create(350, 200, 'rock');
     this.obstacles.create(500, 400, 'rock');
     this.obstacles.create(100, 250, 'rock');
@@ -163,42 +147,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAnimations() {
-    const playerKey = `player_${this.gameState.playerModel}_frames`;
-    if (this.textures.exists(playerKey)) {
-      if (!this.anims.exists(`${this.gameState.playerModel}_idle`)) {
-        this.anims.create({
-          key: `${this.gameState.playerModel}_idle`,
-          frames: [{ key: playerKey, frame: 0 }],
-          frameRate: 1
-        });
-      }
-    } else {
-      console.log('Player texture not available for animations, using fallback');
-    }
+    // Animações simples de movimento (placeholder)
+    this.anims.create({
+      key: 'player-idle',
+      frames: [{ key: 'player' }],
+      frameRate: 1
+    });
 
-    const echoKey = `echo_${this.gameState.echoMood}_frames`;
-    if (this.textures.exists(echoKey)) {
-      if (!this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
-        this.anims.create({
-          key: `echo_${this.gameState.echoMood}_idle`,
-          frames: [{ key: echoKey, frame: 0 }],
-          frameRate: 1
-        });
-      }
-    } else {
-      console.log('Echo texture not available for animations, using fallback');
-    }
+    this.anims.create({
+      key: 'echo-idle',
+      frames: [{ key: 'echo' }],
+      frameRate: 1
+    });
   }
 
   private handlePlayerMovement() {
-    if (this.isChatting || !this.player) {
-      if (this.player) {
-        this.player.setVelocity(0);
-        // Only play animation if it exists
-        if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
-          this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
-        }
-      }
+    // Se estiver conversando, o jogador não pode se mover
+    if (this.isChatting) {
+      this.player.setVelocity(0);
       return;
     }
 
@@ -219,20 +185,12 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.player.setVelocityY(0);
     }
-
-    if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
-      this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
-    }
   }
 
   private handleEchoMovement() {
-    if (this.isChatting || !this.echo) {
-      if (this.echo) {
-        this.echo.setVelocity(0);
-        if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
-          this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
-        }
-      }
+    // Se estiver conversando, Echo fica parado
+    if (this.isChatting) {
+      this.echo.setVelocity(0);
       return;
     }
 
@@ -247,20 +205,17 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.echo.setVelocity(0);
     }
-    
-    if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
-      this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
-    }
   }
 
   private handleInteraction() {
+    // Verificar se a tecla E foi pressionada e se está perto do Echo
     if (Phaser.Input.Keyboard.JustDown(this.eKey) && this.isNearEcho && !this.isChatting) {
       this.startChat();
     }
   }
 
   private updateProximityIndicator() {
-    if (this.isNearEcho && !this.isChatting && this.echo) {
+    if (this.isNearEcho && !this.isChatting) {
       this.proximityIndicator.setVisible(true);
       this.proximityIndicator.setPosition(this.echo.x - 50, this.echo.y - 50);
     } else {
@@ -270,31 +225,45 @@ export class GameScene extends Phaser.Scene {
 
   private startChat() {
     console.log('=== INICIANDO CHAT ===');
-    this.isChatting = true;
-    if (this.player) this.player.setVelocity(0);
-    if (this.echo) this.echo.setVelocity(0);
+    console.log('Estado antes: isChatting =', this.isChatting);
     
+    this.isChatting = true;
+    
+    // Parar movimentos imediatamente
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
+    
+    // Desabilitar captura global de teclas para permitir digitação no chat
     if (this.input.keyboard) {
       this.input.keyboard.disableGlobalCapture();
+      console.log('Teclas globais DESABILITADAS');
     }
     
+    console.log('Estado após iniciar: isChatting =', this.isChatting);
     this.onChatToggle(true);
   }
 
   public stopChat() {
     console.log('=== PARANDO CHAT ===');
-    this.isChatting = false;
-    if (this.player) this.player.setVelocity(0);
-    if (this.echo) this.echo.setVelocity(0);
+    console.log('Estado antes: isChatting =', this.isChatting);
     
+    this.isChatting = false;
+    
+    // Garantir que as velocidades sejam zeradas antes de permitir movimento
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
+    
+    // Reabilitar captura global de teclas para o jogo
     if (this.input.keyboard) {
       this.input.keyboard.enableGlobalCapture();
+      console.log('Teclas globais REABILITADAS');
     }
+    
+    console.log('Estado após parar: isChatting =', this.isChatting);
+    console.log('=== MOVIMENTO LIBERADO ===');
   }
 
   private checkProximity() {
-    if (!this.player || !this.echo) return;
-
     const distance = Phaser.Math.Distance.Between(
       this.player.x, this.player.y,
       this.echo.x, this.echo.y
@@ -303,26 +272,29 @@ export class GameScene extends Phaser.Scene {
     const wasNear = this.isNearEcho;
     this.isNearEcho = distance < 100;
 
+    // Se saiu de perto durante o chat, fechar o chat
     if (!this.isNearEcho && this.isChatting) {
+      console.log('Saiu de perto durante o chat - fechando');
       this.stopChat();
       this.onChatToggle(false);
     }
   }
 
   private updateEchoTarget() {
-    if (!this.player) return;
-
     const personality = this.gameState.echoPersonality;
     
     if (personality === 'extrovertido') {
+      // Segue o jogador
       this.echoTarget.x = this.player.x + Phaser.Math.Between(-50, 50);
       this.echoTarget.y = this.player.y + Phaser.Math.Between(-50, 50);
     } else if (personality === 'calmo') {
+      // Movimento lento e aleatório
       this.echoTarget.x = Phaser.Math.Between(100, 700);
       this.echoTarget.y = Phaser.Math.Between(100, 500);
     } else if (personality === 'misterioso') {
+      // Evita o jogador às vezes
       const avoidPlayer = Math.random() > 0.5;
-      if (avoidPlayer && this.echo) {
+      if (avoidPlayer) {
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.echo.x, this.echo.y);
         this.echoTarget.x = this.echo.x + Math.cos(angle) * 100;
         this.echoTarget.y = this.echo.y + Math.sin(angle) * 100;
@@ -332,8 +304,20 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Garantir que o target esteja dentro dos limites
     this.echoTarget.x = Phaser.Math.Clamp(this.echoTarget.x, 50, 750);
     this.echoTarget.y = Phaser.Math.Clamp(this.echoTarget.y, 50, 550);
+  }
+
+  private getEchoColor(): number {
+    const mood = this.gameState.echoMood;
+    switch (mood) {
+      case 'feliz': return 0xfbbf24;
+      case 'triste': return 0x3b82f6;
+      case 'raiva': return 0xef4444;
+      case 'calmo': return 0x10b981;
+      default: return 0x8b5cf6;
+    }
   }
 
   private getEchoSpeed(): number {
@@ -346,27 +330,30 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  public async updateEchoMood(newMood: string) {
+  public updateEchoMood(newMood: string) {
+    // Verificar se a cena está pronta antes de tentar usar graphics
     if (!this.isSceneReady || !this.add) {
+      console.log('Cena não está pronta ainda, atualizando mood mais tarde');
       this.gameState.echoMood = newMood;
       return;
     }
 
     this.gameState.echoMood = newMood;
+    const newColor = this.getEchoColor();
     
-    // Criar nova textura para o mood
-    await CharacterSprites.createEchoSprite(this, newMood);
+    // Verificar se já existe uma texture com esse mood para evitar duplicatas
+    const textureKey = 'echo-' + newMood;
+    if (!this.textures.exists(textureKey)) {
+      // Recriar texture do Echo
+      this.add.graphics()
+        .fillStyle(newColor)
+        .fillRect(0, 0, 32, 32)
+        .generateTexture(textureKey, 32, 32);
+    }
     
-    const textureKey = `echo_${newMood}_frames`;
-    if (this.echo && this.textures.exists(textureKey)) {
-      this.echo.setTexture(textureKey, 0);
-      
-      // Recriar animações para o novo mood
-      this.createAnimations();
-      
-      if (this.anims.exists(`echo_${newMood}_idle`)) {
-        this.echo.anims.play(`echo_${newMood}_idle`, true);
-      }
+    // Atualizar sprite do Echo
+    if (this.echo) {
+      this.echo.setTexture(textureKey);
     }
   }
 
@@ -376,38 +363,19 @@ export class GameScene extends Phaser.Scene {
 
   public forceStopChat() {
     console.log('=== FORÇANDO PARADA DO CHAT ===');
-    this.isChatting = false;
-    if (this.player) this.player.setVelocity(0);
-    if (this.echo) this.echo.setVelocity(0);
+    console.log('Estado antes da força: isChatting =', this.isChatting);
     
+    this.isChatting = false;
+    this.player.setVelocity(0);
+    this.echo.setVelocity(0);
+    
+    // Reabilitar captura global de teclas
     if (this.input.keyboard) {
       this.input.keyboard.enableGlobalCapture();
+      console.log('Teclas globais FORÇADAMENTE REABILITADAS');
     }
-  }
-
-  private createFallbackPlayer() {
-    // Create a simple colored rectangle as fallback
-    const graphics = this.add.graphics();
-    graphics.fillStyle(0xd2691e);
-    graphics.fillRect(0, 0, 32, 32);
-    graphics.generateTexture('fallback_player', 32, 32);
     
-    this.player = this.physics.add.sprite(100, 300, 'fallback_player');
-    this.player.setCollideWorldBounds(true);
-    this.player.setScale(2.5); // Reduzido de 4 para 2.5
-    console.log('Created fallback player sprite');
-  }
-
-  private createFallbackEcho() {
-    // Create a simple colored rectangle as fallback
-    const graphics = this.add.graphics();
-    graphics.fillStyle(0x9370db);
-    graphics.fillRect(0, 0, 32, 32);
-    graphics.generateTexture('fallback_echo', 32, 32);
-    
-    this.echo = this.physics.add.sprite(400, 300, 'fallback_echo');
-    this.echo.setCollideWorldBounds(true);
-    this.echo.setScale(2.5); // Reduzido de 4 para 2.5
-    console.log('Created fallback echo sprite');
+    console.log('Estado após força: isChatting =', this.isChatting);
+    console.log('=== MOVIMENTO FORÇADAMENTE LIBERADO ===');
   }
 }
