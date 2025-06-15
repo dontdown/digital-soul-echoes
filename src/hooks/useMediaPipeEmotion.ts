@@ -73,20 +73,24 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       shapeMap[shape.categoryName] = shape.score;
     });
 
-    // Calcular emoções baseadas nos blendshapes
+    // Calcular emoções individuais primeiro
+    const felizScore = (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0) + (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0);
+    const tristeScore = (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0) + (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0);
+    const surprsoScore = (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0) + (shapeMap['jawOpen'] || 0);
+    const raivaScore = (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0) + (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0);
+    const cansadoScore = (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0) + (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0);
+    
+    // Calcular neutro baseado nos outros scores
+    const neutroScore = 1 - Math.max(felizScore, tristeScore, surprsoScore, raivaScore, cansadoScore);
+
+    // Criar objeto de emoções com os scores calculados
     const emotions = {
-      feliz: (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0) + (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0),
-      triste: (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0) + (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0),
-      surpreso: (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0) + (shapeMap['jawOpen'] || 0),
-      raiva: (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0) + (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0),
-      cansado: (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0) + (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0),
-      neutro: 1 - Math.max(
-        emotions?.feliz || 0,
-        emotions?.triste || 0,
-        emotions?.surpreso || 0,
-        emotions?.raiva || 0,
-        emotions?.cansado || 0
-      )
+      feliz: felizScore,
+      triste: tristeScore,
+      surpreso: surprsoScore,
+      raiva: raivaScore,
+      cansado: cansadoScore,
+      neutro: neutroScore
     };
 
     // Encontrar a emoção com maior pontuação
