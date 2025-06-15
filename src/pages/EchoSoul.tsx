@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -27,6 +28,7 @@ const EchoSoul = () => {
       playerName: playerData.name,
       playerMood: playerData.mood,
       playerPreference: playerData.preference,
+      playerModel: playerData.model || 'casual', // fallback para dados antigos
       echoPersonality,
       echoMood,
       echoSprite: 'blue'
@@ -46,6 +48,7 @@ const EchoSoul = () => {
           player_name: playerData.name,
           player_mood: playerData.mood,
           player_preference: playerData.preference,
+          player_model: playerData.model || 'casual',
           echo_personality: echoPersonality,
           echo_mood: echoMood,
           echo_sprite: 'blue'

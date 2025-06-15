@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,6 +9,7 @@ import { useEchoStore } from "@/store/echoStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
+import { CharacterSprites } from "@/components/Game/CharacterSprites";
 
 const CreateEcho = () => {
   const navigate = useNavigate();
@@ -17,11 +17,14 @@ const CreateEcho = () => {
   const [playerName, setPlayerName] = useState("");
   const [mood, setMood] = useState("");
   const [preference, setPreference] = useState("");
+  const [playerModel, setPlayerModel] = useState("");
+
+  const playerModels = CharacterSprites.getPlayerModels();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!playerName || !mood || !preference) {
+    if (!playerName || !mood || !preference || !playerModel) {
       toast.error("Por favor, preencha todos os campos");
       return;
     }
@@ -44,12 +47,13 @@ const CreateEcho = () => {
           player_name: playerName,
           player_mood: mood,
           player_preference: preference,
+          player_model: playerModel,
           echo_personality: personality,
           echo_mood: 'neutro',
           echo_sprite: 'blue'
         });
 
-      setPlayerData({ name: playerName, mood, preference });
+      setPlayerData({ name: playerName, mood, preference, model: playerModel });
       setEchoPersonality(personality);
       
       toast.success("Echo criado com sucesso!");
@@ -110,6 +114,20 @@ const CreateEcho = () => {
               className="bg-slate-700 border-slate-600 text-white mt-2"
               placeholder="Digite seu nome"
             />
+          </div>
+
+          <div>
+            <Label className="text-white">Escolha seu visual:</Label>
+            <RadioGroup value={playerModel} onValueChange={setPlayerModel} className="mt-2">
+              {playerModels.map((model) => (
+                <div key={model.id} className="flex items-center space-x-2">
+                  <RadioGroupItem value={model.id} id={model.id} />
+                  <Label htmlFor={model.id} className="text-gray-300">
+                    {model.name} - {model.description}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </div>
 
           <div>

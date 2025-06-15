@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
+import { CharacterSprites } from './CharacterSprites';
 
 export interface GameState {
   playerName: string;
   playerMood: string;
   playerPreference: string;
+  playerModel: string;
   echoPersonality: string;
   echoMood: string;
   echoSprite: string;
@@ -34,18 +36,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Criar sprites como retângulos coloridos (placeholders)
-    this.add.graphics()
-      .fillStyle(0x4ade80)
-      .fillRect(0, 0, 32, 32)
-      .generateTexture('player', 32, 32);
-
-    // Sprite do Echo baseado no humor
-    const echoColor = this.getEchoColor();
-    this.add.graphics()
-      .fillStyle(echoColor)
-      .fillRect(0, 0, 32, 32)
-      .generateTexture('echo', 32, 32);
+    // Criar todos os sprites de personagens
+    CharacterSprites.createPlayerSprites(this);
+    CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
 
     // Obstáculos
     this.add.graphics()
@@ -67,13 +60,15 @@ export class GameScene extends Phaser.Scene {
     this.obstacles = this.physics.add.staticGroup();
     this.createObstacles();
 
-    // Criar jogador
-    this.player = this.physics.add.sprite(100, 300, 'player');
+    // Criar jogador com o modelo escolhido
+    const playerTexture = `player_${this.gameState.playerModel}`;
+    this.player = this.physics.add.sprite(100, 300, playerTexture);
     this.player.setCollideWorldBounds(true);
     this.player.setScale(1);
 
-    // Criar Echo
-    this.echo = this.physics.add.sprite(400, 300, 'echo');
+    // Criar Echo com sprite baseado no humor
+    const echoTexture = `echo_${this.gameState.echoMood}`;
+    this.echo = this.physics.add.sprite(400, 300, echoTexture);
     this.echo.setCollideWorldBounds(true);
     this.echo.setScale(1);
 
@@ -331,7 +326,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   public updateEchoMood(newMood: string) {
-    // Verificar se a cena está pronta antes de tentar usar graphics
     if (!this.isSceneReady || !this.add) {
       console.log('Cena não está pronta ainda, atualizando mood mais tarde');
       this.gameState.echoMood = newMood;
@@ -339,16 +333,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gameState.echoMood = newMood;
-    const newColor = this.getEchoColor();
     
     // Verificar se já existe uma texture com esse mood para evitar duplicatas
-    const textureKey = 'echo-' + newMood;
+    const textureKey = `echo_${newMood}`;
     if (!this.textures.exists(textureKey)) {
-      // Recriar texture do Echo
-      this.add.graphics()
-        .fillStyle(newColor)
-        .fillRect(0, 0, 32, 32)
-        .generateTexture(textureKey, 32, 32);
+      // Recriar sprite do Echo com novo mood
+      CharacterSprites.createEchoSprite(this, newMood);
     }
     
     // Atualizar sprite do Echo
