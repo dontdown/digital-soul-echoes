@@ -16,7 +16,7 @@ interface GameChatProps {
 }
 
 const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodChange }: GameChatProps) => {
-  const { messages, addMessage, isLoading } = useChatHistory(gameState?.playerName);
+  const { messages, addMessage, isLoading, getEchoContext } = useChatHistory(gameState?.playerName);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -63,7 +63,10 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
       
       const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
       const emotionContext = getEmotionContext(gameState.detectedEmotion);
-      const conversationHistory = messages.slice(-6).map(msg => 
+      
+      // Usar o contexto completo do histórico para que o Echo mantenha a memória
+      const echoContext = getEchoContext();
+      const conversationHistory = echoContext.slice(-10).map(msg => 
         `${msg.sender === 'player' ? gameState.playerName : 'Echo'}: ${msg.content}`
       ).join('\n');
 
@@ -87,10 +90,11 @@ Estado atual do usuário:
 - ${contextualPrompts[emotion as keyof typeof contextualPrompts]}
 - Personalidade do Echo: ${gameState.echoPersonality}
 
-Histórico recente da conversa:
+Histórico de conversas (incluindo contexto completo):
 ${conversationHistory}
 
 INSTRUÇÕES ESPECIAIS:
+- Você tem acesso ao histórico completo de conversas (${echoContext.length} mensagens), use esse contexto para ser mais empático
 - Você REALMENTE vê e observa as expressões faciais da pessoa através da câmera
 - Mencione especificamente o que observa no rosto quando relevante
 - Seja genuinamente empático baseado no que VÊ, não apenas no que lê

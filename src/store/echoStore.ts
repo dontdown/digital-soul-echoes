@@ -13,10 +13,12 @@ interface EchoStore {
   echoPersonality: string;
   echoMood: string;
   memories: string[];
+  echoCreated: boolean; // Nova flag para rastrear se Echo foi criado
   setPlayerData: (data: PlayerData) => void;
   setEchoPersonality: (personality: string) => void;
   updateEchoMood: (mood: string) => void;
   addMemory: (memory: string) => void;
+  markEchoAsCreated: () => void; // Nova função
   clearData: () => void;
 }
 
@@ -27,8 +29,11 @@ export const useEchoStore = create<EchoStore>()(
       echoPersonality: "misterioso",
       echoMood: "neutro",
       memories: [],
+      echoCreated: false,
       
-      setPlayerData: (data) => set({ playerData: data }),
+      setPlayerData: (data) => {
+        set({ playerData: data, echoCreated: true }); // Marcar como criado quando dados são definidos
+      },
       
       setEchoPersonality: (personality) => set({ echoPersonality: personality }),
       
@@ -41,11 +46,14 @@ export const useEchoStore = create<EchoStore>()(
         }
       },
       
+      markEchoAsCreated: () => set({ echoCreated: true }),
+      
       clearData: () => set({
         playerData: null,
         echoPersonality: "misterioso",
         echoMood: "neutro",
-        memories: []
+        memories: [],
+        echoCreated: false
       }),
     }),
     {

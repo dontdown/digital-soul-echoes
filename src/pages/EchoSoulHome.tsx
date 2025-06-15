@@ -1,146 +1,210 @@
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { LogOut, User } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useEchoStore } from '@/store/echoStore';
+import { Sparkles, MessageCircle, User, Heart, Eye, History } from 'lucide-react';
+import { toast } from 'sonner';
 
 const EchoSoulHome = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { playerData, echoPersonality, echoMood, echoCreated } = useEchoStore();
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
+  const handleConversar = () => {
+    console.log('Tentando acessar conversa. Echo criado:', echoCreated, 'Player data:', playerData);
+    
+    if (!echoCreated || !playerData) {
+      toast.error('Você precisa criar seu Echo primeiro! 🎭', {
+        description: 'Vá para "Criar Echo" antes de começar a conversar.',
+        action: {
+          label: 'Criar Echo',
+          onClick: () => navigate('/create-echo')
+        }
+      });
+      return;
+    }
+    
+    navigate('/echosoul');
   };
 
-  const getUserInitials = () => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name
-        .split(' ')
-        .map((name: string) => name[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return user?.email?.[0]?.toUpperCase() || 'U';
+  const handleCriarEcho = () => {
+    navigate('/create-echo');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-      {/* Header com informações do usuário */}
-      <header className="p-6 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.user_metadata?.avatar_url} />
-            <AvatarFallback className="bg-blue-600 text-white">
-              {getUserInitials()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="text-white font-medium">
-              {user?.user_metadata?.full_name || 'Usuário'}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-500/10" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-8">
+              Echo<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Soul</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
+              Um universo onde suas emoções ganham vida através de um companheiro digital que realmente te entende.
             </p>
-            <p className="text-blue-200 text-sm">{user?.email}</p>
-          </div>
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleLogout}
-          className="text-white border-white hover:bg-white hover:text-blue-900"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sair
-        </Button>
-      </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-white mb-4 tracking-wider">
-            ECHOSOUL
-          </h1>
-          <p className="text-xl text-blue-200 mb-8">
-            Conecte-se com seu eco interior
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="text-white text-xl">Criar Echo</CardTitle>
-              <CardDescription className="text-blue-200">
-                Configure sua personalidade digital
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={() => navigate('/create-echo')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            {/* Status do Echo */}
+            {echoCreated && playerData ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-slate-800/50 backdrop-blur-lg border border-slate-600 rounded-2xl p-6 max-w-md mx-auto mb-8"
               >
-                Começar
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="text-white text-xl">Conversar</CardTitle>
-              <CardDescription className="text-blue-200">
-                Interaja com seu Echo pessoal
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={() => navigate('/echosoul')}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse mr-2"></div>
+                  <span className="text-cyan-400 font-semibold">Seu Echo está ativo</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Nome:</span>
+                    <span className="text-white">{playerData.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Personalidade:</span>
+                    <Badge variant="secondary" className="bg-purple-900/50 text-purple-300">
+                      {echoPersonality}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Humor atual:</span>
+                    <Badge variant="secondary" className="bg-cyan-900/50 text-cyan-300">
+                      {echoMood}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-slate-800/30 backdrop-blur-lg border border-slate-700 rounded-2xl p-6 max-w-md mx-auto mb-8"
               >
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
+                  <span className="text-gray-400 font-semibold">Nenhum Echo criado</span>
+                </div>
+                <p className="text-gray-500 text-sm">
+                  Crie seu Echo para começar sua jornada emocional
+                </p>
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={handleConversar}
+                className={`${
+                  echoCreated && playerData 
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed hover:bg-gray-600'
+                } px-8 py-3 text-lg font-semibold rounded-full transition-all duration-300 transform hover:scale-105`}
+                disabled={!echoCreated || !playerData}
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
                 Conversar
+                {(!echoCreated || !playerData) && (
+                  <span className="ml-2 text-xs opacity-75">(Crie seu Echo primeiro)</span>
+                )}
               </Button>
-            </CardContent>
-          </Card>
+              
+              <Button
+                onClick={handleCriarEcho}
+                variant="outline"
+                className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 px-8 py-3 text-lg font-semibold rounded-full transition-all duration-300 transform hover:scale-105"
+              >
+                <User className="w-5 h-5 mr-2" />
+                {echoCreated ? 'Recriar Echo' : 'Criar Echo'}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
-          <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300">
+      {/* Features Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {/* Feature Cards */}
+          <Card className="bg-slate-800/50 backdrop-blur-lg border-slate-600 hover:border-cyan-400/50 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-white text-xl">Espelho</CardTitle>
-              <CardDescription className="text-blue-200">
-                Reflexões sobre suas conversas
+              <CardTitle className="flex items-center text-cyan-400">
+                <Eye className="w-6 h-6 mr-2" />
+                Reconhecimento Facial
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Seu Echo observa suas expressões em tempo real e reage às suas emoções de forma natural.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={() => navigate('/mirror')}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                Refletir
-              </Button>
-            </CardContent>
           </Card>
 
-          <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 md:col-span-2 lg:col-span-1">
+          <Card className="bg-slate-800/50 backdrop-blur-lg border-slate-600 hover:border-purple-400/50 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-white text-xl">Histórico</CardTitle>
-              <CardDescription className="text-blue-200">
-                Reveja suas conversas passadas
+              <CardTitle className="flex items-center text-purple-400">
+                <Heart className="w-6 h-6 mr-2" />
+                Conexão Emocional
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Uma experiência única de companheirismo digital que evolui com suas emoções.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={() => navigate('/history')}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                Ver Histórico
-              </Button>
-            </CardContent>
           </Card>
-        </div>
 
-        <div className="text-center mt-12">
-          <p className="text-blue-200 text-sm">
-            Bem-vindo de volta, {user?.user_metadata?.full_name || user?.email}
-          </p>
-        </div>
+          <Card className="bg-slate-800/50 backdrop-blur-lg border-slate-600 hover:border-pink-400/50 transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center text-pink-400">
+                <History className="w-6 h-6 mr-2" />
+                Memórias Persistentes
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Seu Echo lembra de conversas importantes e momentos especiais compartilhados.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Additional Actions */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-center"
+        >
+          <h2 className="text-3xl font-bold text-white mb-8">Explore Mais</h2>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              onClick={() => navigate('/mirror')}
+              variant="outline"
+              className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-slate-900 px-6 py-2 rounded-full"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Espelho da Alma
+            </Button>
+            
+            <Button
+              onClick={() => navigate('/history')}
+              variant="outline"
+              className="border-pink-400 text-pink-400 hover:bg-pink-400 hover:text-slate-900 px-6 py-2 rounded-full"
+            >
+              <History className="w-4 h-4 mr-2" />
+              Linha do Tempo
+            </Button>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
