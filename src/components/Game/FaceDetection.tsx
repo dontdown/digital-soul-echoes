@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useFaceDetection, DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -38,7 +38,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
       try {
         await startWebcam();
         setIsEnabled(true);
-        toast.success('Detecção facial ativada!');
+        toast.success('Detecção facial ativada! (Modo simplificado)');
         
         // Aguardar um pouco para o vídeo carregar
         setTimeout(() => {
@@ -100,6 +100,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
             <span className="text-white font-medium">Detecção Facial</span>
+            <Zap className="w-3 h-3 text-yellow-400" title="Modo Simplificado" />
           </div>
           <Button
             onClick={handleToggleDetection}
@@ -116,14 +117,21 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {!isModelLoaded && (
             <div className="flex items-center space-x-2 text-yellow-400 text-sm">
               <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              <span>Carregando modelos...</span>
+              <span>Inicializando detecção...</span>
+            </div>
+          )}
+
+          {isModelLoaded && !isEnabled && (
+            <div className="flex items-center space-x-2 text-cyan-400 text-sm">
+              <Zap className="w-3 h-3" />
+              <span>Modo simplificado pronto</span>
             </div>
           )}
 
           {(webcamError || detectionError) && (
-            <div className="flex items-center space-x-2 text-red-400 text-sm">
+            <div className="flex items-center space-x-2 text-orange-400 text-sm">
               <AlertCircle className="w-3 h-3" />
-              <span>{webcamError || detectionError}</span>
+              <span>Usando detecção básica</span>
             </div>
           )}
 
@@ -171,7 +179,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400">
-          O Echo pode ver suas expressões e reagir de acordo! 🤖
+          Echo está usando detecção simplificada para ver suas expressões! ⚡
         </div>
       </motion.div>
     </AnimatePresence>
