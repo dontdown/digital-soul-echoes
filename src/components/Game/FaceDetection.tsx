@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useFaceDetection, DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Zap } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -29,6 +29,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
 
   useEffect(() => {
     if (isVisible) {
+      console.log('🎭 Carregando modelos de detecção facial...');
       loadModels();
     }
   }, [isVisible, loadModels]);
@@ -36,39 +37,34 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
       try {
-        console.log('Iniciando webcam...');
+        console.log('🚀 Iniciando detecção facial...');
         await startWebcam();
         setIsEnabled(true);
-        toast.success('Detecção facial ativada! (Modo simplificado)');
-        
-        // Aguardar mais tempo para o vídeo carregar completamente
-        setTimeout(() => {
-          if (videoRef.current && isModelLoaded) {
-            console.log('Iniciando detecção...');
-            startDetection(videoRef.current);
-          }
-        }, 2000);
+        toast.success('Câmera ativada! Aguarde o carregamento...', {
+          duration: 3000
+        });
       } catch (err) {
-        console.error('Erro ao ativar câmera:', err);
-        toast.error('Erro ao ativar câmera');
+        console.error('💥 Erro ao ativar câmera:', err);
+        toast.error('Erro ao ativar câmera. Verifique as permissões.');
         setIsEnabled(false);
       }
     } else {
-      console.log('Parando webcam...');
+      console.log('🛑 Desativando detecção facial...');
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
-      toast.info('Detecção facial desativada');
+      toast.info('Câmera desativada');
     }
   };
 
   // Iniciar detecção quando vídeo estiver ativo
   useEffect(() => {
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('Auto-iniciando detecção...');
+      console.log('🔄 Auto-iniciando detecção de emoções...');
       setTimeout(() => {
         if (videoRef.current && isActive) {
           startDetection(videoRef.current);
+          toast.success('Detecção de emoções ativa!');
         }
       }, 1000);
     }
@@ -105,7 +101,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         className="fixed top-20 right-4 z-30 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-lg p-4 space-y-3"
-        style={{ width: '280px' }}
+        style={{ width: '300px' }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -123,57 +119,73 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           </Button>
         </div>
 
-        {/* Status */}
+        {/* Status detalhado */}
         <div className="space-y-2">
-          {!isModelLoaded && (
-            <div className="flex items-center space-x-2 text-yellow-400 text-sm">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              <span>Inicializando detecção...</span>
-            </div>
-          )}
+          {/* Status do modelo */}
+          <div className="flex items-center space-x-2 text-sm">
+            {isModelLoaded ? (
+              <>
+                <CheckCircle className="w-3 h-3 text-green-400" />
+                <span className="text-green-400">Detecção inicializada</span>
+              </>
+            ) : (
+              <>
+                <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                <span className="text-yellow-400">Carregando detecção...</span>
+              </>
+            )}
+          </div>
 
-          {isModelLoaded && !isEnabled && (
-            <div className="flex items-center space-x-2 text-cyan-400 text-sm">
-              <Zap className="w-3 h-3" />
-              <span>Modo simplificado pronto</span>
-            </div>
-          )}
-
-          {isEnabled && !isActive && (
-            <div className="flex items-center space-x-2 text-yellow-400 text-sm">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              <span>Carregando câmera...</span>
-            </div>
-          )}
-
-          {(webcamError || detectionError) && (
-            <div className="flex items-center space-x-2 text-orange-400 text-sm">
-              <AlertCircle className="w-3 h-3" />
-              <span>Usando detecção básica</span>
-            </div>
-          )}
-
-          {isEnabled && isActive && (
-            <div className="space-y-2">
-              <div className="text-green-400 text-sm flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>Câmera ativa</span>
-              </div>
-
-              {currentEmotion && (
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300 text-sm">Emoção detectada:</span>
-                    <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
-                  </div>
-                  <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
-                    {currentEmotion}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    Confiança: {Math.round(confidence * 100)}%
-                  </div>
-                </div>
+          {/* Status da câmera */}
+          {isEnabled && (
+            <div className="flex items-center space-x-2 text-sm">
+              {isActive ? (
+                <>
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400">Câmera ativa</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                  <span className="text-yellow-400">Conectando câmera...</span>
+                </>
               )}
+            </div>
+          )}
+
+          {/* Erros */}
+          {webcamError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-2">
+              <div className="flex items-center space-x-2 text-red-400 text-sm">
+                <AlertCircle className="w-3 h-3" />
+                <span>Erro da câmera:</span>
+              </div>
+              <div className="text-red-300 text-xs mt-1">{webcamError}</div>
+            </div>
+          )}
+
+          {detectionError && (
+            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
+              <div className="flex items-center space-x-2 text-orange-400 text-sm">
+                <AlertCircle className="w-3 h-3" />
+                <span>Modo básico ativo</span>
+              </div>
+            </div>
+          )}
+
+          {/* Emoção detectada */}
+          {isEnabled && isActive && currentEmotion && (
+            <div className="bg-slate-700/50 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300 text-sm">Emoção detectada:</span>
+                <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
+              </div>
+              <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
+                {currentEmotion}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Confiança: {Math.round(confidence * 100)}%
+              </div>
             </div>
           )}
         </div>
@@ -187,23 +199,34 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               muted
               playsInline
               className="w-full h-32 bg-black rounded-lg object-cover"
-              onLoadedData={() => console.log('Vídeo carregado')}
-              onError={(e) => console.error('Erro no vídeo:', e)}
+              onLoadedData={() => console.log('📹 Dados do vídeo carregados')}
+              onLoadedMetadata={() => console.log('📊 Metadados do vídeo carregados')}
+              onCanPlay={() => console.log('▶️ Vídeo pronto para reprodução')}
+              onPlaying={() => console.log('🎬 Vídeo reproduzindo')}
+              onError={(e) => console.error('❌ Erro no elemento de vídeo:', e)}
             />
+            
+            {/* Indicador de detecção ativa */}
             {isDetecting && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-2 right-2 flex items-center space-x-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-white text-xs bg-black/50 px-1 rounded">REC</span>
               </div>
             )}
+            
+            {/* Loading overlay */}
             {!isActive && isEnabled && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                <div className="text-white text-sm">Carregando...</div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
+                <div className="text-center">
+                  <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <div className="text-white text-sm">Carregando câmera...</div>
+                </div>
               </div>
             )}
           </div>
         )}
 
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-400 text-center">
           Echo está usando detecção simplificada para ver suas expressões! ⚡
         </div>
       </motion.div>
