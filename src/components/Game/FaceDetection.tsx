@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           await loadModels();
         }
         
+        // Toast apenas na ativação inicial
         toast.success('Detecção ativada!');
       } catch (err) {
         console.error('💥 Erro ao ativar detecção:', err);
@@ -64,6 +66,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
+      // Toast apenas na desativação
       toast.info('Detecção desativada');
     }
   };
@@ -128,8 +131,10 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
           console.log('✅ FaceDetection: Iniciando detecção real...');
           startDetection(videoRef.current);
+          // Toast apenas quando a detecção real iniciar - uma vez só
           toast.success(`Detecção ${currentModel} iniciada!`, {
-            description: debugMode ? 'Modo debug ativo - veja o console' : 'Faça expressões para testar'
+            description: debugMode ? 'Modo debug ativo - veja o console' : 'Faça expressões para testar',
+            duration: 2000 // Reduzir duração
           });
         } else {
           console.warn('⚠️ FaceDetection: Vídeo ainda não está completamente pronto');
@@ -141,7 +146,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             videoWidth: video.videoWidth
           });
         }
-      }, 1000); // Aumentar para 1 segundo
+      }, 1000);
     }
   }, [isActive, isModelLoaded, isEnabled, currentModel, startDetection]);
 
@@ -248,7 +253,8 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                   if (model.id !== 'opencv') {
                     switchModel(model.id);
                     setShowModelSelector(false);
-                    toast.info(`Modelo alterado para: ${model.name}`);
+                    // Toast apenas na mudança de modelo
+                    toast.info(`Modelo alterado para: ${model.name}`, { duration: 2000 });
                   }
                 }}
               >

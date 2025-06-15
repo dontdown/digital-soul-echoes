@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -128,9 +129,9 @@ const EchoSoul = () => {
     const newMood = emotionMap[emotion];
     if (newMood !== echoMood) {
       updateEchoMood(newMood);
-      toast.success(`Echo percebeu que você está ${emotion}!`, {
-        duration: 2000
-      });
+      // REMOVIDO: Toast automático que causava spam
+      // Agora apenas atualiza silenciosamente
+      console.log(`Echo mood atualizado para: ${newMood} (emoção detectada: ${emotion})`);
     }
   }, [echoMood, updateEchoMood]);
 
