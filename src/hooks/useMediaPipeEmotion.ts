@@ -28,9 +28,11 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
   const isProcessingRef = useRef<boolean>(false);
   const processingIntervalRef = useRef<number | null>(null);
   
-  // Cache para evitar processamento desnecessário
+  // Cache mais agressivo para evitar processamento desnecessário
   const lastEmotionRef = useRef<MediaPipeEmotion>('neutro');
   const emotionStabilityCountRef = useRef<number>(0);
+  const lastProcessTimeRef = useRef<number>(0);
+  const skipFramesRef = useRef<number>(0);
 
   const loadModel = useCallback(async () => {
     try {
@@ -46,15 +48,15 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-          delegate: 'GPU'
+          delegate: 'CPU' // Mudando para CPU para evitar problemas de GPU
         },
         outputFaceBlendshapes: true,
-        outputFacialTransformationMatrixes: false, // Desabilitar para economizar performance
+        outputFacialTransformationMatrixes: false,
         runningMode: 'VIDEO',
         numFaces: 1
       });
       
-      console.log('✅ MediaPipe carregado!');
+      console.log('✅ MediaPipe carregado com CPU!');
       setIsModelLoaded(true);
       
     } catch (err: any) {
@@ -70,36 +72,49 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     }
 
     const shapes = blendshapes[0].categories;
-    const shapeMap: { [key: string]: number } = {};
-    shapes.forEach((shape: any) => {
-      shapeMap[shape.categoryName] = shape.score;
-    });
+    
+    // Processamento super simplificado - apenas os essenciais
+    let smileScore = 0;
+    let frownScore = 0;
+    let eyeWideScore = 0;
+    let browDownScore = 0;
 
-    // Apenas os blendshapes mais importantes para performance
-    const smileScore = Math.max(shapeMap['mouthSmileLeft'] || 0, shapeMap['mouthSmileRight'] || 0);
-    const frownScore = Math.max(shapeMap['mouthFrownLeft'] || 0, shapeMap['mouthFrownRight'] || 0);
-    const eyeWideScore = Math.max(shapeMap['eyeWideLeft'] || 0, shapeMap['eyeWideRight'] || 0);
-    const browDownScore = Math.max(shapeMap['browDownLeft'] || 0, shapeMap['browDownRight'] || 0);
+    // Buscar apenas os blendshapes críticos (mais rápido)
+    for (let i = 0; i < shapes.length && i < 20; i++) { // Limitar a 20 primeiros
+      const shape = shapes[i];
+      const name = shape.categoryName;
+      const score = shape.score;
+      
+      if (name.includes('mouthSmile')) {
+        smileScore = Math.max(smileScore, score);
+      } else if (name.includes('mouthFrown')) {
+        frownScore = Math.max(frownScore, score);
+      } else if (name.includes('eyeWide')) {
+        eyeWideScore = Math.max(eyeWideScore, score);
+      } else if (name.includes('browDown')) {
+        browDownScore = Math.max(browDownScore, score);
+      }
+    }
 
-    // Lógica simplificada para melhor performance
+    // Lógica ultra-simplificada
     let emotion: MediaPipeEmotion = 'neutro';
     let confidence = 0.5;
 
-    if (smileScore > 0.1) {
+    if (smileScore > 0.12) {
       emotion = 'feliz';
-      confidence = Math.min(smileScore * 3, 1);
-    } else if (frownScore > 0.08) {
+      confidence = Math.min(smileScore * 2.5, 1);
+    } else if (frownScore > 0.1) {
       emotion = 'triste';
-      confidence = Math.min(frownScore * 4, 1);
-    } else if (browDownScore > 0.1) {
+      confidence = Math.min(frownScore * 3, 1);
+    } else if (browDownScore > 0.12) {
       emotion = 'raiva';
-      confidence = Math.min(browDownScore * 4, 1);
-    } else if (eyeWideScore > 0.15) {
+      confidence = Math.min(browDownScore * 3, 1);
+    } else if (eyeWideScore > 0.2) {
       emotion = 'surpreso';
-      confidence = Math.min(eyeWideScore * 3, 1);
+      confidence = Math.min(eyeWideScore * 2.5, 1);
     }
 
-    // Estabilizar emoção - só mudar se for consistente
+    // Super estabilização - só mudar após 4 frames consistentes
     if (emotion === lastEmotionRef.current) {
       emotionStabilityCountRef.current++;
     } else {
@@ -107,8 +122,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       lastEmotionRef.current = emotion;
     }
 
-    // Só reportar mudança se for estável por pelo menos 2 frames
-    if (emotionStabilityCountRef.current >= 2) {
+    if (emotionStabilityCountRef.current >= 4) {
       return { emotion, confidence };
     } else {
       return { emotion: currentEmotion || 'neutro', confidence };
@@ -120,11 +134,24 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       return;
     }
 
+    const now = performance.now();
+    
+    // Skip frames se o processamento anterior foi muito recente (throttling agressivo)
+    if (now - lastProcessTimeRef.current < 500) { // Mínimo 500ms entre processamentos
+      return;
+    }
+
+    // Skip frames ocasionais para dar respiro ao CPU
+    skipFramesRef.current++;
+    if (skipFramesRef.current % 3 !== 0) { // Processa apenas 1 a cada 3 tentativas
+      return;
+    }
+
     frameCountRef.current++;
     const video = videoElementRef.current;
 
     try {
-      const now = performance.now();
+      lastProcessTimeRef.current = now;
       const results = faceLandmarkerRef.current.detectForVideo(video, now);
       
       if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {        
@@ -142,9 +169,9 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       }
       
     } catch (err) {
-      // Log silencioso para não afetar performance
-      if (frameCountRef.current % 100 === 1) {
-        console.error('Erro processamento:', err);
+      // Log mínimo para não afetar performance
+      if (frameCountRef.current % 200 === 1) {
+        console.warn('MediaPipe skip frame:', frameCountRef.current);
       }
     }
   }, [analyzeEmotionFromBlendshapes, onEmotionChange, currentEmotion]);
@@ -155,22 +182,27 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       return;
     }
 
-    console.log('🚀 Iniciando MediaPipe otimizado (5 FPS)');
+    console.log('🚀 Iniciando MediaPipe ultra-otimizado (2 FPS)');
 
     videoElementRef.current = videoElement;
     setIsDetecting(true);
     isProcessingRef.current = true;
     frameCountRef.current = 0;
     emotionStabilityCountRef.current = 0;
+    skipFramesRef.current = 0;
+    lastProcessTimeRef.current = 0;
     
-    // Reduzir para 5 FPS (200ms) para melhor performance
+    // Reduzir drasticamente para 2 FPS (500ms)
     processingIntervalRef.current = window.setInterval(() => {
       if (isProcessingRef.current && videoElement.readyState >= 2) {
-        processFrame();
+        // Usar setTimeout para não bloquear o thread principal
+        setTimeout(() => {
+          processFrame();
+        }, 0);
       }
-    }, 200); // 200ms = 5 FPS
+    }, 500); // 500ms = 2 FPS
     
-    console.log('✅ Detecção 5 FPS iniciada');
+    console.log('✅ Detecção 2 FPS iniciada com throttling');
   }, [isModelLoaded, processFrame]);
 
   const stopDetection = useCallback(() => {
@@ -182,6 +214,8 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     frameCountRef.current = 0;
     videoElementRef.current = null;
     emotionStabilityCountRef.current = 0;
+    skipFramesRef.current = 0;
+    lastProcessTimeRef.current = 0;
     
     if (processingIntervalRef.current) {
       clearInterval(processingIntervalRef.current);
