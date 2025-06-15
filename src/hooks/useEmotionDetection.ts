@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from 'react';
+import { useMediaPipeEmotion } from './useMediaPipeEmotion';
 
 export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
 export type EmotionModel = 'mediapipe' | 'opencv' | 'tensorflow' | 'simulated';
@@ -26,7 +27,13 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Hook do MediaPipe
+  const mediaPipe = useMediaPipeEmotion(onEmotionChange);
+  
   const switchModel = useCallback((model: EmotionModel) => {
+    // Parar detecção atual
+    stopDetection();
+    
     setCurrentModel(model);
     setIsModelLoaded(false);
     setError(null);
@@ -37,49 +44,82 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     setError(null);
     setIsModelLoaded(false);
     
-    // Por enquanto, apenas modo simulado até implementarmos um modelo
-    console.log(`📦 Carregando modelo: ${currentModel}`);
-    setIsModelLoaded(true);
-    setError('Modo simulado ativo - escolha um modelo para implementar');
-  }, [currentModel]);
+    try {
+      if (currentModel === 'mediapipe') {
+        console.log('📦 Carregando MediaPipe...');
+        await mediaPipe.loadModel();
+        setIsModelLoaded(mediaPipe.isModelLoaded);
+        setError(mediaPipe.error);
+      } else if (currentModel === 'simulated') {
+        console.log('📦 Carregando modo simulado...');
+        setIsModelLoaded(true);
+        setError('Modo simulado ativo');
+      } else {
+        console.log(`📦 Carregando modelo: ${currentModel}`);
+        setIsModelLoaded(true);
+        setError(`Modelo ${currentModel} ainda não implementado`);
+      }
+    } catch (err: any) {
+      console.error('❌ Erro ao carregar modelo:', err);
+      setError(`Erro ao carregar ${currentModel}: ${err.message}`);
+      setIsModelLoaded(false);
+    }
+  }, [currentModel, mediaPipe]);
   
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!isModelLoaded) return;
     
     setIsDetecting(true);
-    console.log('🔄 Iniciando detecção simulada...');
+    console.log(`🔄 Iniciando detecção com ${currentModel}...`);
     
-    // Simulação básica por enquanto
-    const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso'];
-    let currentIndex = 0;
-    
-    const interval = setInterval(() => {
-      const emotion = emotions[currentIndex % emotions.length];
-      setCurrentEmotion(emotion);
-      setConfidence(0.8);
+    if (currentModel === 'mediapipe') {
+      mediaPipe.startDetection(videoElement);
+      setCurrentEmotion(mediaPipe.currentEmotion);
+      setConfidence(mediaPipe.confidence);
+    } else if (currentModel === 'simulated') {
+      // Simulação básica
+      const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso'];
+      let currentIndex = 0;
       
-      if (onEmotionChange) {
-        onEmotionChange(emotion);
-      }
+      const interval = setInterval(() => {
+        const emotion = emotions[currentIndex % emotions.length];
+        setCurrentEmotion(emotion);
+        setConfidence(0.8);
+        
+        if (onEmotionChange) {
+          onEmotionChange(emotion);
+        }
+        
+        currentIndex++;
+      }, 3000);
       
-      currentIndex++;
-    }, 3000);
-    
-    // Store interval for cleanup
-    (window as any).emotionInterval = interval;
-  }, [isModelLoaded, onEmotionChange]);
+      (window as any).emotionInterval = interval;
+    }
+  }, [isModelLoaded, currentModel, mediaPipe, onEmotionChange]);
   
   const stopDetection = useCallback(() => {
     setIsDetecting(false);
     setCurrentEmotion(null);
     
-    if ((window as any).emotionInterval) {
+    if (currentModel === 'mediapipe') {
+      mediaPipe.stopDetection();
+    } else if ((window as any).emotionInterval) {
       clearInterval((window as any).emotionInterval);
       delete (window as any).emotionInterval;
     }
     
     console.log('⏹️ Detecção parada');
-  }, []);
+  }, [currentModel, mediaPipe]);
+  
+  // Sincronizar estados do MediaPipe
+  useState(() => {
+    if (currentModel === 'mediapipe') {
+      setCurrentEmotion(mediaPipe.currentEmotion);
+      setConfidence(mediaPipe.confidence);
+      setIsDetecting(mediaPipe.isDetecting);
+      if (mediaPipe.error) setError(mediaPipe.error);
+    }
+  });
   
   return {
     currentModel,
@@ -88,7 +128,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     confidence,
     isDetecting,
     error,
-    isSimulated: true, // Por enquanto sempre simulado
+    isSimulated: currentModel === 'simulated',
     switchModel,
     loadModels,
     startDetection,

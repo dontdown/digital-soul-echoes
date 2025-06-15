@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -62,8 +61,8 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     {
       id: 'mediapipe',
       name: 'MediaPipe',
-      description: 'Google MediaPipe - Rápido e preciso',
-      status: '🔧 Implementar'
+      description: 'Google MediaPipe - Detecção facial avançada',
+      status: '✅ Implementado'
     },
     {
       id: 'tensorflow',
@@ -193,14 +192,34 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         {/* Status */}
         <div className="space-y-2">
           {/* Status do modelo */}
-          <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-3">
-            <div className="text-orange-400 text-sm font-medium">
-              🎭 Modo Simulado Ativo
+          {currentModel === 'mediapipe' ? (
+            <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+              <div className="text-green-400 text-sm font-medium">
+                🤖 MediaPipe Ativo
+              </div>
+              <div className="text-green-300 text-xs mt-1">
+                Detecção de emoções em tempo real usando IA do Google
+              </div>
             </div>
-            <div className="text-orange-300 text-xs mt-1">
-              Escolha um modelo acima para implementar detecção real de emoções
+          ) : currentModel === 'simulated' ? (
+            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-3">
+              <div className="text-orange-400 text-sm font-medium">
+                🎭 Modo Simulado Ativo
+              </div>
+              <div className="text-orange-300 text-xs mt-1">
+                Escolha MediaPipe para detecção real de emoções
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
+              <div className="text-blue-400 text-sm font-medium">
+                🔧 Modelo {currentModel}
+              </div>
+              <div className="text-blue-300 text-xs mt-1">
+                Este modelo ainda precisa ser implementado
+              </div>
+            </div>
+          )}
 
           {/* Status da câmera */}
           {isEnabled && (
@@ -280,7 +299,10 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🔧 Clique em ⚙️ para escolher um modelo de IA para implementar
+          {currentModel === 'mediapipe' ? 
+            '🤖 MediaPipe carregado - detecção real ativa!' : 
+            '🔧 Clique em ⚙️ para escolher MediaPipe'
+          }
         </div>
       </motion.div>
     </AnimatePresence>

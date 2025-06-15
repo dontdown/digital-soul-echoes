@@ -1,0 +1,172 @@
+
+import { useState, useRef, useCallback } from 'react';
+import { FaceLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
+
+export type MediaPipeEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
+
+interface UseMediaPipeEmotionReturn {
+  isModelLoaded: boolean;
+  currentEmotion: MediaPipeEmotion | null;
+  confidence: number;
+  isDetecting: boolean;
+  error: string | null;
+  loadModel: () => Promise<void>;
+  startDetection: (videoElement: HTMLVideoElement) => void;
+  stopDetection: () => void;
+}
+
+export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion) => void): UseMediaPipeEmotionReturn => {
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState<MediaPipeEmotion | null>(null);
+  const [confidence, setConfidence] = useState(0);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const loadModel = useCallback(async () => {
+    try {
+      setError(null);
+      setIsModelLoaded(false);
+      
+      console.log('🤖 Carregando MediaPipe FaceLandmarker...');
+      
+      // Inicializar o FilesetResolver
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+      );
+      
+      // Criar o FaceLandmarker
+      faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+          delegate: 'GPU'
+        },
+        outputFaceBlendshapes: true,
+        outputFacialTransformationMatrixes: true,
+        runningMode: 'VIDEO',
+        numFaces: 1
+      });
+      
+      setIsModelLoaded(true);
+      console.log('✅ MediaPipe carregado com sucesso!');
+      
+    } catch (err: any) {
+      console.error('❌ Erro ao carregar MediaPipe:', err);
+      setError(`Erro ao carregar MediaPipe: ${err.message}`);
+      setIsModelLoaded(false);
+    }
+  }, []);
+
+  const analyzeEmotionFromBlendshapes = useCallback((blendshapes: any[]): { emotion: MediaPipeEmotion; confidence: number } => {
+    if (!blendshapes || blendshapes.length === 0) {
+      return { emotion: 'neutro', confidence: 0.5 };
+    }
+
+    // Mapear blendshapes para emoções
+    const shapes = blendshapes[0].categories;
+    const shapeMap: { [key: string]: number } = {};
+    
+    shapes.forEach((shape: any) => {
+      shapeMap[shape.categoryName] = shape.score;
+    });
+
+    // Calcular emoções baseadas nos blendshapes
+    const emotions = {
+      feliz: (shapeMap['mouthSmileLeft'] || 0) + (shapeMap['mouthSmileRight'] || 0) + (shapeMap['cheekSquintLeft'] || 0) + (shapeMap['cheekSquintRight'] || 0),
+      triste: (shapeMap['mouthFrownLeft'] || 0) + (shapeMap['mouthFrownRight'] || 0) + (shapeMap['mouthLowerDownLeft'] || 0) + (shapeMap['mouthLowerDownRight'] || 0),
+      surpreso: (shapeMap['eyeWideLeft'] || 0) + (shapeMap['eyeWideRight'] || 0) + (shapeMap['jawOpen'] || 0),
+      raiva: (shapeMap['browDownLeft'] || 0) + (shapeMap['browDownRight'] || 0) + (shapeMap['eyeSquintLeft'] || 0) + (shapeMap['eyeSquintRight'] || 0),
+      cansado: (shapeMap['eyeBlinkLeft'] || 0) + (shapeMap['eyeBlinkRight'] || 0) + (shapeMap['eyeLookDownLeft'] || 0) + (shapeMap['eyeLookDownRight'] || 0),
+      neutro: 1 - Math.max(
+        emotions?.feliz || 0,
+        emotions?.triste || 0,
+        emotions?.surpreso || 0,
+        emotions?.raiva || 0,
+        emotions?.cansado || 0
+      )
+    };
+
+    // Encontrar a emoção com maior pontuação
+    let maxEmotion: MediaPipeEmotion = 'neutro';
+    let maxScore = emotions.neutro;
+
+    Object.entries(emotions).forEach(([emotion, score]) => {
+      if (score > maxScore) {
+        maxEmotion = emotion as MediaPipeEmotion;
+        maxScore = score;
+      }
+    });
+
+    return { 
+      emotion: maxEmotion, 
+      confidence: Math.min(maxScore * 2, 1) // Normalizar para 0-1
+    };
+  }, []);
+
+  const processFrame = useCallback((videoElement: HTMLVideoElement) => {
+    if (!faceLandmarkerRef.current || !isDetecting) return;
+
+    try {
+      const startTimeMs = performance.now();
+      const results = faceLandmarkerRef.current.detectForVideo(videoElement, startTimeMs);
+      
+      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
+        const { emotion, confidence: conf } = analyzeEmotionFromBlendshapes(results.faceBlendshapes);
+        
+        setCurrentEmotion(emotion);
+        setConfidence(conf);
+        
+        if (onEmotionChange) {
+          onEmotionChange(emotion);
+        }
+        
+        console.log(`😊 Emoção detectada: ${emotion} (${Math.round(conf * 100)}%)`);
+      }
+      
+    } catch (err) {
+      console.error('❌ Erro no processamento do frame:', err);
+    }
+
+    if (isDetecting) {
+      animationFrameRef.current = requestAnimationFrame(() => processFrame(videoElement));
+    }
+  }, [isDetecting, analyzeEmotionFromBlendshapes, onEmotionChange]);
+
+  const startDetection = useCallback((videoElement: HTMLVideoElement) => {
+    if (!faceLandmarkerRef.current || !isModelLoaded) {
+      console.warn('⚠️ Modelo não carregado');
+      return;
+    }
+
+    setIsDetecting(true);
+    console.log('🎬 Iniciando detecção MediaPipe...');
+    
+    processFrame(videoElement);
+  }, [isModelLoaded, processFrame]);
+
+  const stopDetection = useCallback(() => {
+    setIsDetecting(false);
+    setCurrentEmotion(null);
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    console.log('⏹️ Detecção MediaPipe parada');
+  }, []);
+
+  return {
+    isModelLoaded,
+    currentEmotion,
+    confidence,
+    isDetecting,
+    error,
+    loadModel,
+    startDetection,
+    stopDetection
+  };
+};
