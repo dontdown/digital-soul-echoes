@@ -7,6 +7,8 @@ import PhaserGame from '@/components/Game/PhaserGame';
 import GameChat from '@/components/Game/GameChat';
 import FaceDetection from '@/components/Game/FaceDetection';
 import { useEchoStore } from '@/store/echoStore';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, History, Menu, Camera } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +17,7 @@ import { DetectedEmotion } from '@/hooks/useEmotionDetection';
 const EchoSoul = () => {
   const navigate = useNavigate();
   const { playerData, echoPersonality, echoMood, updateEchoMood } = useEchoStore();
+  const { t } = useLanguage();
   const [showChat, setShowChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showFaceDetection, setShowFaceDetection] = useState(false);
@@ -144,7 +147,7 @@ const EchoSoul = () => {
   if (!gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando EchoSoul...</div>
+        <div className="text-white text-xl">{t('common.loading')}</div>
       </div>
     );
   }
@@ -157,20 +160,21 @@ const EchoSoul = () => {
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-white">EchoSoul</h1>
             <div className="text-sm text-gray-400">
-              Jogador: {gameState.playerName} | Echo: {echoPersonality}
+              {t('common.name')}: {gameState.playerName} | Echo: {echoPersonality}
             </div>
             {/* Indicador de emoção detectada */}
             {lastDetectedEmotion && showFaceDetection && (
               <div className="flex items-center space-x-2 bg-cyan-900/30 rounded-full px-3 py-1">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                 <span className="text-cyan-400 text-xs">
-                  Echo vê: {lastDetectedEmotion}
+                  {t('game.echoSees')} {lastDetectedEmotion}
                 </span>
               </div>
             )}
           </div>
           
           <div className="flex items-center space-x-2">
+            <LanguageSelector />
             <Button
               onClick={() => setShowFaceDetection(!showFaceDetection)}
               variant="ghost"
@@ -211,7 +215,7 @@ const EchoSoul = () => {
             className="w-full justify-start text-purple-400 hover:text-purple-300"
           >
             <Eye className="w-4 h-4 mr-2" />
-            Espelho da Alma
+            {t('home.mirror')}
           </Button>
           <Button
             onClick={() => navigate('/history')}
@@ -220,7 +224,7 @@ const EchoSoul = () => {
             className="w-full justify-start text-pink-400 hover:text-pink-300"
           >
             <History className="w-4 h-4 mr-2" />
-            Linha do Tempo
+            {t('home.timeline')}
           </Button>
         </motion.div>
       )}
@@ -251,10 +255,10 @@ const EchoSoul = () => {
           <div className="absolute -bottom-16 left-0 right-0 text-center">
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-lg p-3 inline-block">
               <p className="text-gray-300 text-sm">
-                Use WASD ou setas para mover. Pressione E próximo ao Echo para conversar.
+                {t('game.instructions')}
                 {showFaceDetection && (
                   <span className="block text-cyan-400 mt-1">
-                    👁️ Echo está observando suas expressões e reagindo a elas!
+                    👁️ {t('game.faceDetection')}
                   </span>
                 )}
               </p>
@@ -283,7 +287,7 @@ const EchoSoul = () => {
           animate={{ opacity: 1 }}
           className="fixed bottom-4 left-4 bg-slate-800/70 border border-cyan-400/30 rounded-lg px-3 py-2 text-cyan-400 text-xs"
         >
-          🎭 Echo observa: {lastDetectedEmotion}
+          🎭 {t('game.echoSees')} {lastDetectedEmotion}
         </motion.div>
       )}
     </div>

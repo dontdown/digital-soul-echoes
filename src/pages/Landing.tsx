@@ -1,9 +1,12 @@
+
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 import { 
   Brain, 
   Camera, 
@@ -22,6 +25,7 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Redirect logged-in users to home
   useEffect(() => {
@@ -63,65 +67,65 @@ const Landing = () => {
   const features = [
     {
       icon: Camera,
-      title: "Detecção Facial Inteligente",
-      description: "Tecnologia avançada que reconhece suas emoções em tempo real através da câmera",
+      title: t('features.facial.title'),
+      description: t('features.facial.description'),
       color: "from-cyan-500 to-blue-500"
     },
     {
       icon: Brain,
-      title: "IA Empática",
-      description: "Echo aprende e se adapta às suas emoções, oferecendo respostas personalizadas",
+      title: t('features.ai.title'),
+      description: t('features.ai.description'),
       color: "from-purple-500 to-pink-500"
     },
     {
       icon: MessageCircle,
-      title: "Conversas Humanizadas",
-      description: "Diálogos naturais que se adaptam ao seu estado emocional atual",
+      title: t('features.chat.title'),
+      description: t('features.chat.description'),
       color: "from-green-500 to-teal-500"
     },
     {
       icon: Eye,
-      title: "Espelho da Alma",
-      description: "Reflexões profundas sobre suas conversas e padrões emocionais",
+      title: t('features.mirror.title'),
+      description: t('features.mirror.description'),
       color: "from-indigo-500 to-purple-500"
     },
     {
       icon: History,
-      title: "Memórias Digitais",
-      description: "Histórico completo de suas interações e evolução emocional",
+      title: t('features.history.title'),
+      description: t('features.history.description'),
       color: "from-pink-500 to-red-500"
     },
     {
       icon: Sparkles,
-      title: "Personalidade Única",
-      description: "Cada Echo é moldado com base em suas preferências e personalidade",
+      title: t('features.personality.title'),
+      description: t('features.personality.description'),
       color: "from-yellow-500 to-orange-500"
     }
   ];
 
   const benefits = [
-    "Suporte emocional 24/7",
-    "Tecnologia de ponta em IA",
-    "Privacidade e segurança garantidas",
-    "Interface intuitiva e moderna",
-    "Adaptação contínua às suas necessidades",
-    "Sem julgamentos, apenas compreensão"
+    t('benefits.support'),
+    t('benefits.technology'),
+    t('benefits.privacy'),
+    t('benefits.interface'),
+    t('benefits.adaptation'),
+    t('benefits.noJudgment')
   ];
 
   const testimonials = [
     {
       name: "Maria Silva",
-      text: "O Echo realmente entende minhas emoções. É como ter um amigo digital que sempre está lá.",
+      text: t('testimonials.maria'),
       emotion: "😊"
     },
     {
       name: "João Santos",
-      text: "Impressionante como ele detecta meu humor só pela expressão facial. Revolucionário!",
+      text: t('testimonials.joao'),
       emotion: "🤩"
     },
     {
       name: "Ana Costa",
-      text: "As conversas são tão naturais que às vezes esqueço que estou falando com uma IA.",
+      text: t('testimonials.ana'),
       emotion: "💫"
     }
   ];
@@ -158,13 +162,16 @@ const Landing = () => {
           <Brain className="w-8 h-8 text-cyan-400" />
           <span className="text-2xl font-bold text-white">EchoSoul</span>
         </div>
-        <Button 
-          onClick={handleLogin}
-          variant="outline"
-          className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 transition-all duration-300 font-medium"
-        >
-          {user ? 'Ir para Home' : 'Entrar'}
-        </Button>
+        <div className="flex items-center space-x-4">
+          <LanguageSelector />
+          <Button 
+            onClick={handleLogin}
+            variant="outline"
+            className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 transition-all duration-300 font-medium"
+          >
+            {user ? t('header.goToHome') : t('header.enter')}
+          </Button>
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -176,7 +183,7 @@ const Landing = () => {
           className="max-w-4xl mx-auto"
         >
           <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            EchoSoul
+            {t('hero.title')}
           </h1>
           
           <motion.p 
@@ -185,9 +192,7 @@ const Landing = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 1 }}
           >
-            Seu reflexo digital inteligente que <span className="text-cyan-400 font-semibold">vê</span>, 
-            <span className="text-purple-400 font-semibold"> sente</span> e 
-            <span className="text-pink-400 font-semibold"> evolui</span> com você
+            {t('hero.subtitle')}
           </motion.p>
 
           <motion.p 
@@ -196,8 +201,7 @@ const Landing = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 1 }}
           >
-            Através de detecção facial avançada e inteligência artificial empática, 
-            o Echo compreende suas emoções e oferece conversas verdadeiramente humanizadas.
+            {t('hero.description')}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -211,7 +215,7 @@ const Landing = () => {
               onClick={handleGetStarted}
               className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
             >
-              Criar seu Echo
+              {t('hero.createEcho')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             
@@ -220,7 +224,7 @@ const Landing = () => {
               variant="outline"
               className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 px-8 py-4 text-lg rounded-full transition-all duration-300 font-medium"
             >
-              Saiba mais
+              {t('hero.learnMore')}
             </Button>
           </motion.div>
         </motion.div>
@@ -256,10 +260,10 @@ const Landing = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Funcionalidades Revolucionárias
+              {t('features.title')}
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Descubra como o EchoSoul combina tecnologia de ponta com inteligência emocional
+              {t('features.subtitle')}
             </p>
           </motion.div>
 
@@ -300,7 +304,7 @@ const Landing = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Por que escolher o EchoSoul?
+              {t('benefits.title')}
             </h2>
           </motion.div>
 
@@ -331,7 +335,7 @@ const Landing = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              O que nossos usuários dizem
+              {t('testimonials.title')}
             </h2>
           </motion.div>
 
@@ -365,18 +369,17 @@ const Landing = () => {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Pronto para conhecer seu Echo?
+              {t('cta.title')}
             </h2>
             <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Comece sua jornada de autoconhecimento digital hoje mesmo. 
-              Seu Echo está esperando para ser criado.
+              {t('cta.description')}
             </p>
             
             <Button
               onClick={handleGetStarted}
               className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-12 py-6 text-xl rounded-full shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
             >
-              Começar Agora - É Grátis
+              {t('cta.button')}
               <Sparkles className="ml-3 w-6 h-6" />
             </Button>
           </motion.div>
@@ -393,19 +396,19 @@ const Landing = () => {
           
           <div className="flex space-x-6">
             <Button variant="ghost" className="text-gray-400 hover:text-white">
-              Privacidade
+              {t('footer.privacy')}
             </Button>
             <Button variant="ghost" className="text-gray-400 hover:text-white">
-              Termos
+              {t('footer.terms')}
             </Button>
             <Button variant="ghost" className="text-gray-400 hover:text-white">
-              Suporte
+              {t('footer.support')}
             </Button>
           </div>
         </div>
         
         <div className="text-center mt-8 text-gray-500">
-          © 2024 EchoSoul. Todos os direitos reservados.
+          {t('footer.rights')}
         </div>
       </footer>
     </div>
