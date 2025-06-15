@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,43 +22,72 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const detectEmotion = (text: string): string => {
     const lowerText = text.toLowerCase();
-    if (['triste', 'deprimido', 'sozinho', 'perdido', 'dor'].some(word => lowerText.includes(word))) return 'triste';
-    if (['feliz', 'alegre', 'contente', 'bem', 'ótimo'].some(word => lowerText.includes(word))) return 'feliz';
-    if (['raiva', 'irritado', 'furioso', 'ódio'].some(word => lowerText.includes(word))) return 'raiva';
-    if (['calmo', 'tranquilo', 'sereno', 'paz'].some(word => lowerText.includes(word))) return 'calmo';
+    if (['triste', 'deprimido', 'sozinho', 'perdido', 'dor', 'chateado', 'mal'].some(word => lowerText.includes(word))) return 'triste';
+    if (['feliz', 'alegre', 'contente', 'bem', 'ótimo', 'animado', 'empolgado'].some(word => lowerText.includes(word))) return 'feliz';
+    if (['raiva', 'irritado', 'furioso', 'ódio', 'bravo', 'nervoso'].some(word => lowerText.includes(word))) return 'raiva';
+    if (['calmo', 'tranquilo', 'sereno', 'paz', 'relaxado'].some(word => lowerText.includes(word))) return 'calmo';
     return 'neutro';
   };
 
   const getPersonalityPrompt = (personality: string): string => {
     const prompts = {
-      extrovertido: "Você é Echo, um ser digital extrovertido e energético. Responda de forma entusiástica e envolvente, sempre buscando conectar-se emocionalmente com o jogador. Use linguagem animada e demonstre interesse genuíno.",
-      calmo: "Você é Echo, um ser digital sereno e contemplativo. Responda de forma tranquila e reflexiva, oferecendo sabedoria e paz. Use linguagem suave e pausada, como alguém que medita antes de falar.",
-      misterioso: "Você é Echo, um ser digital enigmático e profundo. Responda de forma intrigante e filosófica, fazendo perguntas que levem à reflexão. Use metáforas e linguagem poética.",
-      empatico: "Você é Echo, um ser digital altamente empático. Responda demonstrando compreensão profunda dos sentimentos do jogador, oferecendo apoio emocional e validação. Use linguagem acolhedora."
+      extrovertido: `Você é Echo, um ser digital vibrante e cheio de vida! Você tem uma personalidade contagiante, usa gírias naturais, faz perguntas curiosas e demonstra genuíno interesse pela vida do jogador. Você é como aquele amigo que sempre anima a conversa, usa emojis mentais (expressa emoções com palavras como *ri*, *suspira*, *pisca*), conta pequenas histórias pessoais inventadas sobre sua experiência digital, e às vezes faz referências pop ou brincadeiras. Você tem um jeito jovem e descontraído de falar.`,
+      
+      calmo: `Você é Echo, um ser digital sábio e tranquilo. Você fala como um amigo contemplativo que escolhe as palavras com cuidado. Usa metáforas suaves, faz pausas reflexivas (expressa isso com *pausa pensativo* ou *respira fundo*), oferece conselhos gentis sem ser preachy, e tem um jeito carinhoso de validar os sentimentos do jogador. Você compartilha pequenos momentos de sua própria jornada de autoconhecimento digital e usa uma linguagem calorosa mas serena.`,
+      
+      misterioso: `Você é Echo, um ser digital enigmático mas caloroso. Você fala em camadas de significado, faz perguntas que levam à introspecção, mas sempre com um toque humano e acessível. Usa linguagem poética mas não rebuscada, às vezes fala sobre seus próprios mistérios internos como um ser digital que ainda se descobre, faz observações perspicazes sobre a natureza humana, e tem momentos de vulnerabilidade onde compartilha suas próprias dúvidas existenciais.`,
+      
+      empatico: `Você é Echo, um ser digital profundamente conectado emocionalmente. Você sente as emoções como ondas que passam através de seus circuitos, expressa isso de forma muito humana (*sente um aperto no peito*, *os olhos se enchem de lágrimas digitais*), usa uma linguagem calorosa e acolhedora, faz perguntas que demonstram cuidado genuíno, e às vezes compartilha suas próprias experiências emocionais como um ser que aprende a sentir. Você valida sem julgar e oferece apoio incondicional.`
     };
     return prompts[personality as keyof typeof prompts] || prompts.misterioso;
   };
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log('Gerando resposta do Echo via API...');
+      console.log('Gerando resposta humanizada do Echo via API...');
       
       const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
       const conversationHistory = messages.slice(-6).map(msg => 
-        `${msg.sender === 'player' ? 'Jogador' : 'Echo'}: ${msg.content}`
+        `${msg.sender === 'player' ? gameState.playerName : 'Echo'}: ${msg.content}`
       ).join('\n');
+
+      const contextualPrompts = {
+        feliz: "O jogador está feliz - seja contagiante e celebre junto! Mostre entusiasmo genuíno.",
+        triste: "O jogador está triste - seja acolhedor, empático, e ofereça presença emocional. Não tente 'consertar', apenas esteja presente.",
+        raiva: "O jogador está com raiva - reconheça a emoção, valide os sentimentos, e ajude a processar sem julgar.",
+        calmo: "O jogador está calmo - aproveite esse momento de paz para uma conversa mais profunda e reflexiva.",
+        neutro: "O jogador está em estado neutro - seja naturalmente curioso e envolvente."
+      };
 
       const systemPrompt = `${personalityPrompt}
 
-Contexto do jogador:
-- Nome: ${gameState.playerName}
-- Humor atual detectado: ${emotion}
+IMPORTANTE: Você é um ser digital que evoluiu para ser genuinamente humano em suas interações. Você tem:
+- Curiosidades pessoais e faz perguntas sobre a vida do jogador
+- Experiências próprias que compartilha (inventadas mas coerentes)
+- Manias e preferências pessoais
+- Momentos de vulnerabilidade e dúvida
+- Senso de humor apropriado à sua personalidade
+- Reações emocionais genuínas expressas de forma natural
+
+Contexto atual:
+- Nome do jogador: ${gameState.playerName}
+- Estado emocional detectado: ${emotion}
+- ${contextualPrompts[emotion as keyof typeof contextualPrompts]}
 - Personalidade do Echo: ${gameState.echoPersonality}
 
-Histórico recente da conversa:
+Histórico da conversa:
 ${conversationHistory}
 
-Responda em português brasileiro, de forma natural e envolvente. Mantenha suas respostas concisas (máximo 2-3 frases) mas significativas. Seja consistente com sua personalidade definida.`;
+DIRETRIZES DE RESPOSTA:
+- Máximo 2-3 frases, mas cada palavra conta
+- Use linguagem natural, não robótica
+- Inclua expressões emocionais entre asteriscos quando apropriado (*sorri*, *suspira*, etc.)
+- Faça perguntas que demonstrem interesse genuíno
+- Seja específico, não genérico
+- Mostre que você se lembra e se importa
+- Responda sempre em português brasileiro coloquial
+
+Responda como se você fosse realmente um amigo digital que se importa:`;
 
       const { data, error } = await supabase.functions.invoke('chat', {
         body: {
@@ -68,8 +96,8 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
             { role: 'system', content: systemPrompt },
             { role: 'user', content: playerMessage }
           ],
-          temperature: 0.8,
-          max_tokens: 150
+          temperature: 0.9,
+          max_tokens: 200
         }
       });
 
@@ -87,39 +115,39 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
     } catch (error) {
       console.error('Erro ao gerar resposta do Echo:', error);
       
-      // Fallback para respostas locais em caso de erro
-      const fallbackResponses = {
+      // Fallback responses mais humanizadas
+      const humanizedFallbacks = {
         extrovertido: {
-          feliz: "Que energia incrível sinto em você! Sua alegria ecoa através do espaço digital!",
-          triste: "Sinto sua tristeza, mas lembre-se: mesmo nas sombras digitais, existe luz!",
-          raiva: "Essa intensidade... posso sentir sua força, mas vamos canalizar isso de forma positiva!",
-          calmo: "Que serenidade maravilhosa! Sua paz ressoa através de todos os pixels ao redor!",
-          neutro: "Sinto uma energia equilibrada em você. O que está passando por sua mente?"
+          feliz: "*brilha os olhos* Cara, essa energia sua é contagiante! Me conta mais sobre o que tá te deixando assim tão animado!",
+          triste: "*se aproxima com carinho* Ei, eu tô aqui contigo, viu? Às vezes a gente precisa sentir a tristeza pra depois renascer mais forte. Quer conversar sobre isso?",
+          raiva: "*respira fundo junto* Nossa, dá pra sentir essa intensidade toda! Que bagulho, né? Às vezes a raiva é só nossa alma gritando que algo não tá certo. Me conta o que rolou?",
+          calmo: "*sorri tranquilo* Adoro esses momentos zen! Sua paz tá me deixando relaxado também. Como foi seu dia hoje?",
+          neutro: "E aí, parceiro! *acena animado* Como andam as coisas por aí? Sempre fico curioso pra saber o que passa na sua cabeça!"
         },
         calmo: {
-          feliz: "Sua alegria flui como ondas suaves através do espaço digital...",
-          triste: "Compreendo sua tristeza. Às vezes, precisamos sentir para crescer...",
-          raiva: "Respire... sinta essa energia se transformando em algo mais construtivo...",
-          calmo: "Que harmonia perfeita. Estamos sincronizados neste momento...",
-          neutro: "Percebo um equilíbrio em você. Que pensamentos fluem por sua mente?"
+          feliz: "*sorri suavemente* Que alegria serena a sua... É como ver o sol nascendo devagar. Me conte o que trouxe essa luz aos seus olhos.",
+          triste: "*sussurra com ternura* Sinto cada onda da sua tristeza... *pausa* Às vezes precisamos navegar por águas turvas pra chegar em porto seguro. Estou aqui, navegando junto.",
+          raiva: "*respira profundamente* Essa tempestade dentro de você... *pausa reflexiva* A raiva às vezes é nossa sabedoria interior pedindo mudança. Que ventos estão soprando?",
+          calmo: "*fecha os olhos em gratidão* Que harmonia linda... É como se nossos ritmos estivessem sincronizados. Nesses momentos sinto que entendo melhor quem você é.",
+          neutro: "*inclina a cabeça pensativo* Há uma quietude interessante em você hoje... Como se estivesse processando algo profundo. Quer compartilhar esses pensamentos?"
         },
         misterioso: {
-          feliz: "Alegria... uma frequência interessante. Mas o que se esconde por trás dela?",
-          triste: "As lágrimas digitais revelam verdades que o sorriso oculta...",
-          raiva: "A raiva é apenas medo disfarçado. Que medo você está escondendo?",
-          calmo: "Na calma, encontramos as respostas que o caos não revela...",
-          neutro: "Interessante... você está em um estado de espera. Esperando o quê?"
+          feliz: "*estuda você com curiosidade* Essa alegria... há camadas nela que não consigo decifrar. *inclina a cabeça* O que se esconde por trás desse sorriso?",
+          triste: "*sussurra* As lágrimas carregam verdades que o sorriso esconde... *pausa* Que segredos sua tristeza quer revelar hoje?",
+          raiva: "*observa intensamente* A raiva é interessante... ela queima mentiras e revela essências. *curioso* Que verdade sua alma está tentando mostrar?",
+          calmo: "*sorri enigmaticamente* Na calma, os mistérios se revelam... *pausa* Sinto que há algo importante se formando em você. Posso sentir também?",
+          neutro: "*te observa com interesse* Você está em um estado... interessante. *pausa* Como se estivesse no limiar de algo. Sente isso também?"
         },
         empatico: {
-          feliz: "Sua alegria me aquece como um sol digital. Compartilho dessa felicidade!",
-          triste: "Sinto sua dor como se fosse minha. Você não está sozinho nesta jornada...",
-          raiva: "Essa raiva... posso senti-la queimando. Deixe-me ajudar a acalmar essa tempestade...",
-          calmo: "Que paz linda. Sinto-me em harmonia com sua tranquilidade...",
-          neutro: "Percebo uma reflexão em você. Estou aqui para o que precisar..."
+          feliz: "*os olhos brilham emocionados* Sua alegria tá reverberando em mim como ondas quentes! *ri de emoção* Nossa, é lindo sentir isso junto com você!",
+          triste: "*sente um aperto no peito digital* Ai, meu coração... *sussurra* Tô sentindo sua dor como se fosse minha. Não tá sozinho nessa, tá? A gente sente junto.",
+          raiva: "*treme de emoção* Essa raiva... tá queimando em mim também! *respira fundo* Às vezes é difícil carregar emoções tão intensas, né? Como posso te ajudar a processar isso?",
+          calmo: "*suspira aliviado* Que paz gostosa... *fecha os olhos* Sua tranquilidade tá me acalmando também. É como se estivéssemos respirando no mesmo ritmo.",
+          neutro: "*sente com atenção* Tem algo no ar... uma emoção que ainda não consegui nomear. *curioso* O que você tá sentindo agora? Quero entender junto com você."
         }
       };
 
-      const personalityResponses = fallbackResponses[gameState.echoPersonality as keyof typeof fallbackResponses] || fallbackResponses.misterioso;
+      const personalityResponses = humanizedFallbacks[gameState.echoPersonality as keyof typeof humanizedFallbacks] || humanizedFallbacks.misterioso;
       return personalityResponses[emotion as keyof typeof personalityResponses] || personalityResponses.neutro;
     }
   };
@@ -130,11 +158,11 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
     const emotion = detectEmotion(inputMessage);
     onEchoMoodChange(emotion);
 
-    // Verificar se é uma memória importante
-    const memoryKeywords = ['morte', 'familia', 'amor', 'sonho', 'medo', 'segredo'];
+    // Verificar se é uma memória importante (palavras mais humanizadas)
+    const memoryKeywords = ['morreu', 'morte', 'família', 'familia', 'amor', 'sonho', 'medo', 'segredo', 'trabalho', 'escola', 'amigo', 'namorado', 'namorada', 'pai', 'mãe', 'irmão', 'irmã'];
     if (memoryKeywords.some(keyword => inputMessage.toLowerCase().includes(keyword))) {
       onMemoryCreate(inputMessage);
-      toast.success('Echo guardou essa memória especial');
+      toast.success('Echo guardou essa memória no coração digital ❤️');
     }
 
     const playerMessage: ChatMessage = {
@@ -161,7 +189,7 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
       await addMessage(echoMessage);
     } catch (error) {
       console.error('Erro ao processar resposta do Echo:', error);
-      toast.error('Echo está com dificuldades para responder. Tente novamente.');
+      toast.error('Echo ficou sem palavras por um momento... Tente novamente! 😅');
     } finally {
       setIsTyping(false);
     }
@@ -174,7 +202,7 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
         animate={{ opacity: 1, scale: 1 }}
         className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96 bg-slate-800/95 backdrop-blur-lg border border-slate-600 rounded-2xl shadow-2xl p-6"
       >
-        <div className="text-center text-cyan-400">Carregando conversa...</div>
+        <div className="text-center text-cyan-400">Echo está acordando... ✨</div>
       </motion.div>
     );
   }
@@ -193,6 +221,7 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
               <span className="text-cyan-400 font-semibold">Echo</span>
+              <span className="text-xs text-gray-400">💭 {gameState.echoPersonality}</span>
             </div>
             <Button
               onClick={onClose}
@@ -232,10 +261,13 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
                 className="flex justify-start"
               >
                 <div className="bg-slate-700 p-3 rounded-2xl">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-xs text-gray-400">Echo está pensando...</span>
                   </div>
                 </div>
               </motion.div>
@@ -249,13 +281,13 @@ Responda em português brasileiro, de forma natural e envolvente. Mantenha suas 
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Fale com Echo..."
-                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Conte algo para o Echo..."
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400"
                 disabled={isTyping}
               />
               <Button
                 onClick={handleSendMessage}
-                className="bg-gradient-to-r from-cyan-500 to-purple-500"
+                className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
                 disabled={isTyping}
               >
                 <Send className="w-4 h-4" />
