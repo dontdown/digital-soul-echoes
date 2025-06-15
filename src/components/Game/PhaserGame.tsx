@@ -84,6 +84,14 @@ const PhaserGame = forwardRef<any, PhaserGameProps>(({ gameState, onChatToggle, 
     }
   }, [gameState.echoMood]);
 
+  // Atualizar emoção detectada na cena do jogo
+  useEffect(() => {
+    if (sceneRef.current && gameState.detectedEmotion) {
+      console.log('🎭 Atualizando emoção detectada no Phaser:', gameState.detectedEmotion);
+      sceneRef.current.updateDetectedEmotion(gameState.detectedEmotion);
+    }
+  }, [gameState.detectedEmotion]);
+
   // Cleanup quando o componente for desmontado (navegação)
   useEffect(() => {
     return () => {

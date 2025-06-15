@@ -7,6 +7,7 @@ export interface GameState {
   echoPersonality: string;
   echoMood: string;
   echoSprite: string;
+  detectedEmotion?: string;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -26,6 +27,9 @@ export class GameScene extends Phaser.Scene {
   private isSceneReady = false;
   private proximityIndicator!: Phaser.GameObjects.Text;
   private echoMovementTimer!: Phaser.Time.TimerEvent;
+  private speechBubble?: Phaser.GameObjects.Group;
+  private currentBubbleText?: string;
+  private bubbleTimer?: Phaser.Time.TimerEvent;
 
   constructor(gameState: GameState, onChatToggle: (show: boolean) => void, onMemoryTrigger: (memory: string) => void) {
     super({ key: 'GameScene' });
@@ -84,6 +88,9 @@ export class GameScene extends Phaser.Scene {
     });
     this.proximityIndicator.setVisible(false);
 
+    // Criar grupo para balões de fala
+    this.speechBubble = this.add.group();
+
     // Timer para movimento do Echo com logs de debug
     this.echoMovementTimer = this.time.addEvent({
       delay: 3000,
@@ -100,6 +107,9 @@ export class GameScene extends Phaser.Scene {
       loop: true
     });
 
+    // Iniciar balões de fala baseados em emoção detectada
+    this.startEmotionBasedSpeech();
+
     this.isSceneReady = true;
     console.log('🎮 GameScene criada. Echo inicial em:', { x: this.echo.x, y: this.echo.y });
   }
@@ -110,6 +120,7 @@ export class GameScene extends Phaser.Scene {
     this.checkProximity();
     this.handleInteraction();
     this.updateProximityIndicator();
+    this.updateSpeechBubblePosition();
   }
 
   private createRealisticTextures() {
@@ -369,6 +380,165 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private startEmotionBasedSpeech() {
+    // Iniciar sistema de balões de fala baseados em emoções
+    this.bubbleTimer = this.time.addEvent({
+      delay: 8000, // Mostrar balão a cada 8 segundos
+      callback: () => {
+        if (!this.isChatting) {
+          this.showEmotionSpeechBubble();
+        }
+      },
+      callbackScope: this,
+      loop: true
+    });
+  }
+
+  private showEmotionSpeechBubble() {
+    const detectedEmotion = this.gameState.detectedEmotion;
+    const echoPersonality = this.gameState.echoPersonality;
+    
+    let message = this.getEmotionBasedMessage(detectedEmotion, echoPersonality);
+    
+    if (message && message !== this.currentBubbleText) {
+      this.createSpeechBubble(message);
+      this.currentBubbleText = message;
+      
+      console.log('💬 Echo falando baseado na emoção:', {
+        detectedEmotion,
+        echoPersonality,
+        message
+      });
+    }
+  }
+
+  private getEmotionBasedMessage(emotion?: string, personality?: string): string {
+    const messages: Record<string, Record<string, string[]>> = {
+      'feliz': {
+        'empatico': ['Que bom ver você sorrindo! 😊', 'Sua alegria é contagiante!', 'Adoro quando você está feliz!'],
+        'extrovertido': ['Yay! Vamos celebrar! 🎉', 'Que tal animarmos isso?', 'Não fique assim, vamos!'],
+        'calmo': ['É bom ver sua serenidade...', 'Que paz transmite...', 'Sua calma me tranquiliza'],
+        'misterioso': ['Interessante... você parece bem', 'Hmm... algo te deixou feliz?', 'Curioso... que alegria é essa?']
+      },
+      'triste': {
+        'empatico': ['Posso sentir sua tristeza... 💙', 'Estou aqui se precisar', 'Quer conversar sobre isso?'],
+        'extrovertido': ['Hey, vai ficar tudo bem!', 'Que tal animarmos isso?', 'Não fique assim, vamos!'],
+        'calmo': ['Às vezes é preciso sentir...', 'A tristeza também passa...', 'Respire fundo...'],
+        'misterioso': ['Lágrimas revelam muito...', 'O que te aflige?', 'Há algo oculto aí...']
+      },
+      'raiva': {
+        'empatico': ['Sinto sua frustração...', 'O que te incomoda?', 'Posso ajudar de alguma forma?'],
+        'extrovertido': ['Calma aí! Respira!', 'Vamos dar uma volta?', 'Que tal relaxar um pouco?'],
+        'calmo': ['A raiva é passageira...', 'Encontre sua paz interior...', 'Deixe a calma voltar...'],
+        'misterioso': ['Interessante reação...', 'O que desperta essa ira?', 'Há fogo em seus olhos...']
+      },
+      'surpreso': {
+        'empatico': ['Algo te surpreendeu?', 'Posso sentir sua surpresa!', 'O que aconteceu?'],
+        'extrovertido': ['Uau! O que foi isso?!', 'Surpresas são ótimas!', 'Conte-me tudo!'],
+        'calmo': ['Uma surpresa inesperada...', 'Que interessante...', 'Algo novo apareceu...'],
+        'misterioso': ['Curioso... não esperava isso?', 'Surpresas revelam muito...', 'Hmm... inesperado...']
+      },
+      'neutro': {
+        'empatico': ['Como você está se sentindo?', 'Tudo bem por aí?', 'Posso perceber sua calma'],
+        'extrovertido': ['E aí? Como estamos hoje?', 'Vamos animar isso!', 'Que tal uma aventura?'],
+        'calmo': ['Que tranquilidade...', 'A serenidade é bela...', 'Paz interior...'],
+        'misterioso': ['Expressão enigmática...', 'O que se passa em sua mente?', 'Silêncio revelador...']
+      },
+      'cansado': {
+        'empatico': ['Você parece cansado...', 'Precisa descansar?', 'Estou aqui para apoiar'],
+        'extrovertido': ['Energia baixa hoje?', 'Vamos dar uma energizada!', 'Que tal uma pausa?'],
+        'calmo': ['O descanso é necessário...', 'Permita-se relaxar...', 'A calma restaura...'],
+        'misterioso': ['Exaustão interessante...', 'O que te consome energia?', 'Cansaço revelador...']
+      }
+    };
+
+    const emotionKey = emotion || 'neutro';
+    const personalityKey = personality || 'empatico';
+    
+    const emotionMessages = messages[emotionKey];
+    if (!emotionMessages) return '';
+    
+    const personalityMessages = emotionMessages[personalityKey] || emotionMessages['empatico'];
+    if (!personalityMessages || personalityMessages.length === 0) return '';
+    
+    return Phaser.Utils.Array.GetRandom(personalityMessages);
+  }
+
+  private createSpeechBubble(message: string) {
+    // Limpar balão anterior
+    this.speechBubble?.clear(true, true);
+
+    // Criar balão de fala
+    const bubbleWidth = Math.min(200, message.length * 8 + 40);
+    const bubbleHeight = 60;
+    const bubbleX = this.echo.x - bubbleWidth / 2;
+    const bubbleY = this.echo.y - 80;
+
+    // Fundo do balão
+    const bubble = this.add.graphics();
+    bubble.fillStyle(0xffffff, 0.95);
+    bubble.lineStyle(2, 0x888888);
+    
+    // Corpo do balão
+    bubble.fillRoundedRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+    bubble.strokeRoundedRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+    
+    // Pontinha do balão (apontando para o Echo)
+    bubble.fillTriangle(
+      this.echo.x - 8, bubbleY + bubbleHeight,
+      this.echo.x + 8, bubbleY + bubbleHeight,
+      this.echo.x, bubbleY + bubbleHeight + 12
+    );
+    bubble.strokeTriangle(
+      this.echo.x - 8, bubbleY + bubbleHeight,
+      this.echo.x + 8, bubbleY + bubbleHeight,
+      this.echo.x, bubbleY + bubbleHeight + 12
+    );
+
+    // Texto do balão
+    const text = this.add.text(this.echo.x, bubbleY + bubbleHeight / 2, message, {
+      fontSize: '12px',
+      color: '#333333',
+      align: 'center',
+      wordWrap: { width: bubbleWidth - 20 }
+    });
+    text.setOrigin(0.5);
+
+    // Adicionar ao grupo
+    this.speechBubble?.add(bubble);
+    this.speechBubble?.add(text);
+
+    // Animação de aparecimento
+    bubble.setAlpha(0);
+    text.setAlpha(0);
+    
+    this.tweens.add({
+      targets: [bubble, text],
+      alpha: 1,
+      duration: 300,
+      ease: 'Power2'
+    });
+
+    // Remover após 4 segundos
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: [bubble, text],
+        alpha: 0,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => {
+          bubble.destroy();
+          text.destroy();
+        }
+      });
+    });
+  }
+
+  private updateSpeechBubblePosition() {
+    // Atualizar posição dos balões se o Echo se mover
+    // (implementação simplificada - os balões são recriados quando necessário)
+  }
+
   private handlePlayerMovement() {
     if (this.isChatting) {
       this.player.setVelocity(0);
@@ -406,7 +576,6 @@ export class GameScene extends Phaser.Scene {
       this.echoTarget.x, this.echoTarget.y
     );
 
-    // Log de debug para movimento
     if (distance > 10) {
       console.log('🏃 Echo se movendo para target:', {
         from: { x: Math.round(this.echo.x), y: Math.round(this.echo.y) },
@@ -417,11 +586,9 @@ export class GameScene extends Phaser.Scene {
       
       this.physics.moveToObject(this.echo, this.echoTarget, echoSpeed);
     } else {
-      // Echo chegou ao target
       console.log('✅ Echo chegou ao target:', { x: this.echoTarget.x, y: this.echoTarget.y });
       this.echo.setVelocity(0);
       
-      // Gerar novo target após um pequeno delay se não estiver conversando
       if (!this.isChatting) {
         this.time.delayedCall(1000, () => {
           console.log('🔄 Gerando novo target para o Echo...');
@@ -478,7 +645,6 @@ export class GameScene extends Phaser.Scene {
       console.log('Teclas globais REABILITADAS');
     }
     
-    // Garantir que o Echo volte a se mover após parar o chat
     this.time.delayedCall(500, () => {
       console.log('🔄 Reativando movimento do Echo após chat');
       this.updateEchoTarget();
@@ -525,12 +691,10 @@ export class GameScene extends Phaser.Scene {
         this.echoTarget.y = Phaser.Math.Between(100, 500);
       }
     } else {
-      // Personalidade padrão
       this.echoTarget.x = Phaser.Math.Between(150, 650);
       this.echoTarget.y = Phaser.Math.Between(150, 450);
     }
 
-    // Garantir que o target está dentro dos limites
     this.echoTarget.x = Phaser.Math.Clamp(this.echoTarget.x, 50, 750);
     this.echoTarget.y = Phaser.Math.Clamp(this.echoTarget.y, 50, 550);
 
@@ -603,7 +767,6 @@ export class GameScene extends Phaser.Scene {
       console.log('Teclas globais FORÇADAMENTE REABILITADAS');
     }
     
-    // Garantir que o Echo volte a se mover
     this.time.delayedCall(300, () => {
       console.log('🔄 Forçando reativação do movimento do Echo');
       this.updateEchoTarget();
@@ -613,7 +776,6 @@ export class GameScene extends Phaser.Scene {
     console.log('=== MOVIMENTO FORÇADAMENTE LIBERADO ===');
   }
 
-  // Método para debug manual do Echo
   public debugEchoMovement() {
     console.log('🔍 DEBUG ECHO MOVEMENT:', {
       position: { x: Math.round(this.echo.x), y: Math.round(this.echo.y) },
@@ -625,7 +787,11 @@ export class GameScene extends Phaser.Scene {
       isSceneReady: this.isSceneReady
     });
     
-    // Forçar novo target
     this.updateEchoTarget();
+  }
+
+  public updateDetectedEmotion(emotion: string) {
+    this.gameState.detectedEmotion = emotion;
+    console.log('🎭 Emoção atualizada no GameScene:', emotion);
   }
 }
