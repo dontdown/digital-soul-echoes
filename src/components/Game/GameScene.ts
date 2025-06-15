@@ -69,7 +69,7 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists(playerTexture)) {
       this.player = this.physics.add.sprite(100, 300, playerTexture, 0);
       this.player.setCollideWorldBounds(true);
-      this.player.setScale(4);
+      this.player.setScale(2.5); // Reduzido de 4 para 2.5
       console.log('Player sprite created successfully');
     } else {
       console.error('Player texture not found:', playerTexture);
@@ -84,7 +84,7 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists(echoTexture)) {
       this.echo = this.physics.add.sprite(400, 300, echoTexture, 0);
       this.echo.setCollideWorldBounds(true);
-      this.echo.setScale(4);
+      this.echo.setScale(2.5); // Reduzido de 4 para 2.5
       console.log('Echo sprite created successfully');
     } else {
       console.error('Echo texture not found:', echoTexture);
@@ -426,7 +426,7 @@ export class GameScene extends Phaser.Scene {
     
     this.player = this.physics.add.sprite(100, 300, 'fallback_player');
     this.player.setCollideWorldBounds(true);
-    this.player.setScale(4);
+    this.player.setScale(2.5); // Reduzido de 4 para 2.5
     console.log('Created fallback player sprite');
   }
 
@@ -439,7 +439,7 @@ export class GameScene extends Phaser.Scene {
     
     this.echo = this.physics.add.sprite(400, 300, 'fallback_echo');
     this.echo.setCollideWorldBounds(true);
-    this.echo.setScale(4);
+    this.echo.setScale(2.5); // Reduzido de 4 para 2.5
     console.log('Created fallback echo sprite');
   }
 }
