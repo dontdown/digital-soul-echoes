@@ -152,6 +152,13 @@ Responda como se você fosse realmente um amigo digital que se importa:`;
     }
   };
 
+  // Função corrigida para fechar o chat
+  const handleCloseChat = () => {
+    console.log('=== FECHANDO CHAT VIA BOTÃO X ===');
+    // Primeiro notificar o Phaser para reabilitar controles
+    onClose();
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -224,7 +231,7 @@ Responda como se você fosse realmente um amigo digital que se importa:`;
               <span className="text-xs text-gray-400">💭 {gameState.echoPersonality}</span>
             </div>
             <Button
-              onClick={onClose}
+              onClick={handleCloseChat}
               variant="ghost"
               size="sm"
               className="text-slate-400 hover:text-white"

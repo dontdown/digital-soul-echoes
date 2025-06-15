@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Phaser from 'phaser';
 import { GameScene, GameState } from './GameScene';
 
@@ -9,10 +10,13 @@ interface PhaserGameProps {
   className?: string;
 }
 
-const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: PhaserGameProps) => {
+const PhaserGame = forwardRef<any, PhaserGameProps>(({ gameState, onChatToggle, onMemoryTrigger, className }, ref) => {
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<GameScene | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Expor a referência da cena para o componente pai
+  useImperativeHandle(ref, () => sceneRef.current);
 
   // Wrapper mais simples para onChatToggle
   const wrappedChatToggle = (show: boolean) => {
@@ -99,6 +103,8 @@ const PhaserGame = ({ gameState, onChatToggle, onMemoryTrigger, className }: Pha
       style={{ width: '800px', height: '600px' }}
     />
   );
-};
+});
+
+PhaserGame.displayName = 'PhaserGame';
 
 export default PhaserGame;

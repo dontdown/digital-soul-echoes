@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const EchoSoul = () => {
   const [showChat, setShowChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
+  const sceneRef = useRef<any>(null);
 
   useEffect(() => {
     if (!playerData) {
@@ -80,6 +81,16 @@ const EchoSoul = () => {
     console.log('=== HANDLE CHAT CLOSE ===');
     console.log('Fechando chat do React');
     setShowChat(false);
+    
+    // Garantir que o Phaser seja notificado para reabilitar controles
+    if (sceneRef.current) {
+      console.log('Notificando Phaser para reabilitar controles');
+      setTimeout(() => {
+        if (sceneRef.current) {
+          sceneRef.current.forceStopChat();
+        }
+      }, 50);
+    }
   }, []);
 
   const handleChatToggle = useCallback((show: boolean) => {
@@ -172,6 +183,7 @@ const EchoSoul = () => {
             onChatToggle={handleChatToggle}
             onMemoryTrigger={handleMemoryCreate}
             className="shadow-2xl"
+            ref={sceneRef}
           />
           
           {/* Instructions */}
