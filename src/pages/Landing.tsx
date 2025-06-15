@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -34,16 +35,18 @@ const Landing = () => {
     console.log("Tentando scroll para features");
     const featuresSection = document.getElementById('features');
     if (featuresSection) {
+      // Usar uma abordagem mais robusta para o scroll
+      const targetPosition = featuresSection.offsetTop - 80; // 80px de offset para header
+      
       try {
-        featuresSection.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start',
-          inline: 'nearest'
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
         });
       } catch (error) {
         console.log("Erro no scroll suave, usando fallback:", error);
         // Fallback para navegadores que não suportam scroll suave
-        featuresSection.scrollIntoView();
+        window.scrollTo(0, targetPosition);
       }
     } else {
       console.log("Seção features não encontrada");
