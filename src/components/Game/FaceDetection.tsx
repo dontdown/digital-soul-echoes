@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useFaceDetection, DetectedEmotion } from '@/hooks/useFaceDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Zap, CheckCircle, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -20,19 +20,22 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     confidence, 
     isDetecting, 
     error: detectionError,
+    isSimulated,
     loadModels, 
     startDetection, 
     stopDetection 
   } = useFaceDetection(onEmotionDetected);
   
   const [isEnabled, setIsEnabled] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !hasLoadedOnce) {
       console.log('🎭 Carregando modelos do face-api.js...');
       loadModels();
+      setHasLoadedOnce(true);
     }
-  }, [isVisible, loadModels]);
+  }, [isVisible, loadModels, hasLoadedOnce]);
 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
@@ -62,11 +65,11 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
       setTimeout(() => {
         if (videoRef.current && isActive) {
           startDetection(videoRef.current);
-          toast.success('Detecção ativa!');
+          toast.success(`Detecção ${isSimulated ? 'simulada' : 'real'} ativa!`);
         }
       }, 1000);
     }
-  }, [isActive, isModelLoaded, isDetecting, isEnabled, startDetection]);
+  }, [isActive, isModelLoaded, isDetecting, isEnabled, isSimulated, startDetection]);
 
   const getEmotionColor = (emotion: DetectedEmotion | null) => {
     switch (emotion) {
@@ -104,8 +107,14 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Eye className="w-4 h-4 text-cyan-400" />
-            <span className="text-white font-medium">Face-API.js</span>
-            <Zap className="w-3 h-3 text-yellow-400" />
+            <span className="text-white font-medium">
+              {isSimulated ? 'Face-AI (Demo)' : 'Face-API.js'}
+            </span>
+            {isSimulated ? (
+              <Play className="w-3 h-3 text-orange-400" />
+            ) : (
+              <Zap className="w-3 h-3 text-yellow-400" />
+            )}
           </div>
           <Button
             onClick={handleToggleDetection}
@@ -124,7 +133,9 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             {isModelLoaded ? (
               <>
                 <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">IA real carregada</span>
+                <span className="text-green-400">
+                  {isSimulated ? 'Modo simulado ativo' : 'IA real carregada'}
+                </span>
               </>
             ) : (
               <>
@@ -133,6 +144,15 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               </>
             )}
           </div>
+
+          {/* Aviso sobre modo simulado */}
+          {isSimulated && isModelLoaded && (
+            <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
+              <div className="text-orange-400 text-xs">
+                🎭 Modo Demo: Gera emoções simuladas para teste
+              </div>
+            </div>
+          )}
 
           {/* Status da câmera */}
           {isEnabled && (
@@ -177,7 +197,9 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           {isEnabled && isActive && currentEmotion && (
             <div className="bg-slate-700/50 rounded-lg p-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Emoção AI:</span>
+                <span className="text-gray-300 text-sm">
+                  {isSimulated ? 'Emoção Demo:' : 'Emoção AI:'}
+                </span>
                 <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
               </div>
               <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
@@ -206,7 +228,9 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             {isDetecting && (
               <div className="absolute top-2 right-2 flex items-center space-x-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-white text-xs bg-black/50 px-1 rounded">REC</span>
+                <span className="text-white text-xs bg-black/50 px-1 rounded">
+                  {isSimulated ? 'DEMO' : 'REC'}
+                </span>
               </div>
             )}
             
@@ -223,7 +247,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🚀 Powered by Face-API.js - IA Real!
+          {isSimulated ? '🎭 Demo Mode - Simulated Emotions' : '🚀 Powered by Face-API.js - Real AI!'}
         </div>
       </motion.div>
     </AnimatePresence>
