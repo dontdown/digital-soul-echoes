@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,6 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         setIsEnabled(true);
         await startWebcam();
         
-        // Carregar modelo se ainda não estiver carregado
         if (!isModelLoaded) {
           await loadModels();
         }
@@ -93,14 +91,38 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   ];
 
-  // Auto-iniciar detecção quando câmera e modelo estiverem prontos
+  // Auto-iniciar detecção quando câmera e modelo estiverem prontos - com mais logs
   useEffect(() => {
+    console.log('🔍 Verificando condições para auto-start:', {
+      isActive,
+      videoElement: !!videoRef.current,
+      isModelLoaded,
+      isDetecting,
+      isEnabled,
+      videoReady: videoRef.current?.readyState
+    });
+    
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🎬 Auto-iniciando detecção...');
+      console.log('🎬 Condições atendidas - Auto-iniciando detecção...');
+      
+      // Verificar se o vídeo realmente está funcionando
+      const video = videoRef.current;
+      console.log('📹 Status do vídeo:', {
+        width: video.videoWidth,
+        height: video.videoHeight,
+        readyState: video.readyState,
+        currentTime: video.currentTime,
+        paused: video.paused,
+        muted: video.muted
+      });
+      
       setTimeout(() => {
-        if (videoRef.current && isActive && isModelLoaded) {
+        if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2) {
+          console.log('✅ Iniciando detecção real...');
           startDetection(videoRef.current);
           toast.success(`Detecção ${currentModel} iniciada!`);
+        } else {
+          console.warn('⚠️ Vídeo ainda não está pronto');
         }
       }, 500);
     }
@@ -209,8 +231,13 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                 🤖 MediaPipe Real Ativo
               </div>
               <div className="text-green-300 text-xs mt-1">
-                Detecção facial avançada com blendshapes do Google
+                Detecção facial avançada com análise de blendshapes
               </div>
+              {isDetecting && (
+                <div className="text-green-300 text-xs mt-1">
+                  ▶️ Processando frames em tempo real
+                </div>
+              )}
             </div>
           ) : currentModel === 'tensorflow' ? (
             <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3">
@@ -280,25 +307,39 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           )}
 
           {/* Emoção detectada */}
-          {isEnabled && isActive && currentEmotion && (
+          {isEnabled && isActive && (
             <div className="bg-slate-700/50 rounded-lg p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-300 text-sm">
                   {isSimulated ? 'Simulação:' : 'Detectado:'}
                 </span>
                 <span className="text-xl">{getEmotionEmoji(currentEmotion)}</span>
               </div>
-              <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
-                {currentEmotion}
-              </div>
-              <div className="text-xs text-gray-400 mt-1">
-                Confiança: {Math.round(confidence * 100)}%
-              </div>
+              
+              {currentEmotion ? (
+                <>
+                  <div className={`font-medium ${getEmotionColor(currentEmotion)}`}>
+                    {currentEmotion}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Confiança: {Math.round(confidence * 100)}%
+                  </div>
+                  {confidence < 0.3 && (
+                    <div className="text-xs text-yellow-400 mt-1">
+                      💡 Tente fazer expressões mais marcantes
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  {isDetecting ? 'Aguardando detecção...' : 'Não detectando'}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Vídeo */}
+        {/* Vídeo com indicadores de status */}
         {isEnabled && (
           <div className="relative">
             <video
@@ -310,15 +351,19 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               style={{ transform: 'scaleX(-1)' }}
             />
             
-            {/* Indicador de modelo */}
+            {/* Indicadores visuais */}
             {isDetecting && (
-              <div className="absolute top-2 right-2 flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${
-                  isSimulated ? 'bg-orange-500' : 'bg-green-500'
-                }`}></div>
+              <div className="absolute top-2 left-2 flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-white text-xs bg-black/50 px-1 rounded">
-                  {isSimulated ? 'DEMO' : 'REAL'}
+                  REAL
                 </span>
+              </div>
+            )}
+            
+            {isActive && (
+              <div className="absolute bottom-2 right-2 text-white text-xs bg-black/50 px-1 rounded">
+                {videoRef.current?.videoWidth}x{videoRef.current?.videoHeight}
               </div>
             )}
             
