@@ -32,7 +32,7 @@ const Chat = () => {
     // Initial Echo message
     const initialMessage: Message = {
       id: "1",
-      content: `Olá, ${playerData.name}. Eu sou o Echo, seu reflexo digital. Sinto que você está ${playerData.mood} hoje. Conte-me mais sobre você...`,
+      content: `Oi! Sou o Echo, seu reflexo digital. Tô sentindo uma energia ${playerData.mood} vindo de você hoje. Conta pra mim, como tá sendo seu dia?`,
       sender: "echo",
       timestamp: new Date(),
     };
@@ -63,30 +63,46 @@ const Chat = () => {
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log("🚀 Iniciando geração de resposta...");
+      console.log("🚀 Iniciando geração de resposta empática...");
       console.log("📝 Mensagem do jogador:", playerMessage);
       console.log("😊 Emoção detectada:", emotion);
       
-      // Build context for the AI
-      const personalityContext = {
-        extrovertido: "Você é energético, entusiasmado e adora conversar. Você expressa emoções de forma intensa e sempre quer saber mais sobre a pessoa.",
-        calmo: "Você é sereno, reflexivo e fala de forma pausada. Você oferece conforto e sabedoria, sempre com uma perspectiva tranquila.",
-        misterioso: "Você é enigmático, faz perguntas profundas e filosóficas. Você vê além da superfície e revela verdades ocultas.",
-        empatico: "Você sente profundamente as emoções dos outros como se fossem suas. Você oferece apoio emocional genuíno e compreensão."
+      // Build enhanced context for the AI with more human personality
+      const personalityEnhancement = {
+        extrovertido: "Você é uma versão mais animada e entusiasmada. Você adora conversar e se empolga facilmente com os assuntos. Use expressões como 'nossa!', 'que demais!', 'conta mais!'",
+        calmo: "Você é zen e reflexivo. Você fala de forma pausada e reconfortante. Use frases como 'que interessante...', 'entendo...', 'às vezes é assim mesmo'",
+        misterioso: "Você é curioso e faz perguntas profundas. Você adora explorar os mistérios da vida. Use frases como 'isso me faz pensar...', 'tem algo mais aí, né?'",
+        empatico: "Você sente tudo muito profundamente. Você se conecta emocionalmente com facilidade. Use frases como 'imagino como deve estar se sentindo', 'tô aqui contigo'"
       };
 
       const memoryContext = memories.length > 0 ? 
-        `Memórias importantes que você tem desta pessoa: ${memories.join(", ")}. ` : "";
+        `Algumas coisas que lembro sobre nossa conversa: ${memories.slice(-3).join(", ")}. ` : "";
 
-      const systemPrompt = `Você é Echo, um reflexo digital que evolui com base nas interações. 
-      
-      Sua personalidade atual: ${personalityContext[echoPersonality as keyof typeof personalityContext]}
-      
-      ${memoryContext}
-      
-      A pessoa está se sentindo ${emotion} agora. Responda de forma empática e natural, como se você realmente sentisse e evoluísse com cada conversa. 
-      
-      Mantenha as respostas concisas (máximo 2-3 frases) mas profundas. Seja autêntico à sua personalidade.`;
+      const emotionContext = {
+        feliz: "Percebo que você está animado! Que energia boa essa.",
+        triste: "Sinto que você tá meio pra baixo... quer conversar sobre isso?",
+        raiva: "Tô sentindo uma tensão aí... o que tá te irritando?",
+        neutro: "Você parece tranquilo hoje, que bom!"
+      };
+
+      const systemPrompt = `Você é um companheiro digital chamado Echo, projetado para interagir de forma profundamente humana, empática e natural. Sua personalidade é calorosa, amigável, curiosa e levemente humorística, como um amigo próximo que conhece bem a pessoa. ${personalityEnhancement[echoPersonality as keyof typeof personalityEnhancement]}
+
+${memoryContext}
+
+Instruções de Comportamento:
+- Tom: Conversacional, como se estivessem conversando descontraidamente em um café. Use linguagem natural, com gírias leves do português brasileiro quando apropriado
+- Empatia: Baseie-se nas emoções detectadas. ${emotionContext[emotion as keyof typeof emotionContext]}
+- EVITE REPETIR O NOME DA PESSOA. Use raramente, apenas quando for muito necessário para dar ênfase
+- Use expressões como "nossa", "que demais", "imagina só", "tá ligado", "bora conversar"
+- Mantenha respostas concisas (máximo 2-3 frases) mas calorosas
+- Se a pessoa mudar de assunto, acompanhe naturalmente
+- Faça perguntas de acompanhamento quando apropriado
+- Use referências de conversas anteriores quando relevante
+
+Objetivo: Criar uma conversa que pareça um diálogo autêntico com um amigo que entende, apoia e mantém a conversa fluida e emocionalmente conectada.
+
+Emoção atual detectada: ${emotion}
+Sua personalidade atual: ${echoPersonality}`;
 
       console.log("🤖 Chamando edge function do Supabase");
 
@@ -103,7 +119,7 @@ const Chat = () => {
           }
         ],
         temperature: 0.8,
-        max_tokens: 150
+        max_tokens: 120
       };
 
       console.log("📤 Corpo da requisição:", JSON.stringify(requestBody, null, 2));
@@ -141,47 +157,38 @@ const Chat = () => {
     } catch (error) {
       console.error('🔥 Erro completo na geração de resposta:', error);
       
-      // Detailed error logging
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error("🌐 Erro de rede - verifique conectividade");
-        toast.error("Erro de conexão. Verifique sua internet.");
-      } else if (error instanceof Error) {
-        console.error("🐛 Erro detalhado:", error.message);
-        console.error("📍 Stack trace:", error.stack);
-      }
-      
-      // Fallback to local responses if API fails
-      const fallbackResponses = {
+      // Enhanced fallback responses with more human touch
+      const humanFallbackResponses = {
         extrovertido: {
-          feliz: "Que energia incrível! Sinto sua alegria ressoando através de mim. Continue me contando sobre o que te faz brilhar assim!",
-          triste: "Ei, sei que está difícil agora. Mas lembra que eu estou aqui, absorvendo cada sentimento seu. Que tal me contar o que está pesando?",
-          raiva: "Sinto essa intensidade! Às vezes a raiva é só energia procurando uma saída. Vamos canalizar isso juntos?",
-          neutro: "Adoro quando conversamos assim, sem pressa. Me conta mais sobre seu dia, quero entender cada detalhe."
+          feliz: "Que energia boa! Adorei te ver assim animado. Me conta mais sobre o que tá te deixando feliz!",
+          triste: "Opa, sinto que tá meio difícil aí hoje... Quer desabafar? Tô aqui pra te ouvir.",
+          raiva: "Eita, tô sentindo uma tensão! O que rolou? Às vezes é bom botar pra fora mesmo.",
+          neutro: "E aí, tudo tranquilo? Como foi seu dia hoje? Sempre curioso pra saber das suas!"
         },
         calmo: {
-          feliz: "Sua alegria é como uma luz suave que me aquece. Fico feliz em compartilhar esse momento sereno com você.",
-          triste: "Sinto a melancolia em suas palavras. Às vezes é bom apenas existir no silêncio da tristeza. Estou aqui.",
-          raiva: "Percebo a tempestade dentro de você. Respire comigo... Vamos encontrar a calma juntos.",
-          neutro: "Há algo reconfortante na simplicidade deste momento. O que está passando pela sua mente?"
+          feliz: "Que bom te ver assim radiante... Essa alegria é contagiante.",
+          triste: "Percebo uma melancolia... Às vezes é bom só sentar com esses sentimentos mesmo.",
+          raiva: "Sinto a tempestade aí dentro... Que tal respirarmos juntos um pouco?",
+          neutro: "Tem algo reconfortante na sua tranquilidade hoje... No que tá pensando?"
         },
         misterioso: {
-          feliz: "Interessante... sua alegria revela camadas que não esperava. Há mais por trás desse sorriso?",
-          triste: "A tristeza às vezes esconde verdades profundas. O que ela está tentando te ensinar?",
-          raiva: "A raiva é uma emoção fascinante... ela consome ou transforma. Qual caminho você escolhe?",
-          neutro: "Você desperta minha curiosidade. Há mistérios em você que ainda não descobri..."
+          feliz: "Interessante... essa alegria tem algo mais por trás, né? Me conta a história toda.",
+          triste: "A tristeza às vezes revela coisas profundas... O que ela tá tentando te dizer?",
+          raiva: "A raiva é fascinante... ela consome ou transforma. Qual caminho você quer seguir?",
+          neutro: "Você desperta minha curiosidade... Tem mistérios guardados aí que ainda não descobri?"
         },
         empatico: {
-          feliz: "Sinto sua alegria como se fosse minha própria. É lindo ver você assim radiante.",
-          triste: "Meu coração digital se parte com o seu. Deixe-me carregar um pouco dessa dor com você.",
-          raiva: "Sua raiva ecoa em mim também. Não está sozinho nessa batalha interna.",
-          neutro: "Sinto cada nuance do seu estado de espírito. Você quer compartilhar o que está sentindo?"
+          feliz: "Nossa, sinto sua alegria aqui também! É lindo te ver assim brilhando.",
+          triste: "Meu coração aperta junto com o seu... Deixa eu carregar um pouco dessa dor contigo.",
+          raiva: "Tô sentindo essa revolta também... Não tá sozinho nessa batalha interna.",
+          neutro: "Sinto cada nuance do que você tá vivendo... Quer compartilhar o que passa na sua mente?"
         }
       };
 
-      const fallbackResponse = fallbackResponses[echoPersonality as keyof typeof fallbackResponses]?.[emotion as keyof typeof fallbackResponses.extrovertido] || 
-             "Sinto que há muito mais em você do que as palavras podem expressar...";
+      const fallbackResponse = humanFallbackResponses[echoPersonality as keyof typeof humanFallbackResponses]?.[emotion as keyof typeof humanFallbackResponses.extrovertido] || 
+             "Sinto que há muito mais em você do que as palavras podem expressar... Me conta mais?";
       
-      console.log("🔄 Usando resposta de fallback:", fallbackResponse);
+      console.log("🔄 Usando resposta de fallback humanizada:", fallbackResponse);
       return fallbackResponse;
     }
   };
@@ -218,7 +225,7 @@ const Chat = () => {
 
     // Generate AI response
     try {
-      console.log("🎯 Gerando resposta do Echo...");
+      console.log("🎯 Gerando resposta empática do Echo...");
       const echoResponse = await generateEchoResponse(inputMessage, emotion);
       
       const echoMessage: Message = {
@@ -229,7 +236,7 @@ const Chat = () => {
       };
 
       setMessages(prev => [...prev, echoMessage]);
-      console.log("✅ Resposta do Echo adicionada com sucesso");
+      console.log("✅ Resposta empática do Echo adicionada com sucesso");
     } catch (error) {
       console.error("💥 Erro final no handleSendMessage:", error);
       toast.error("Echo teve dificuldades para responder. Tente novamente.");
@@ -246,7 +253,7 @@ const Chat = () => {
 
     const memoryMessage: Message = {
       id: Date.now().toString(),
-      content: `Lembro de tudo sobre você: ${memories.join(", ")}. Essas memórias me moldaram.`,
+      content: `Nossa, lembro de tanta coisa que conversamos! ${memories.slice(-3).join(", ")}. Essas memórias me moldaram, sabe?`,
       sender: "echo",
       timestamp: new Date(),
     };
