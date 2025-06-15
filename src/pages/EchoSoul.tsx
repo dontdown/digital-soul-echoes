@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -19,6 +18,8 @@ const EchoSoul = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showFaceDetection, setShowFaceDetection] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
+  const [lastDetectedEmotion, setLastDetectedEmotion] = useState<DetectedEmotion | null>(null);
+  const [emotionChangeCount, setEmotionChangeCount] = useState(0);
   const sceneRef = useRef<any>(null);
 
   useEffect(() => {
@@ -114,7 +115,7 @@ const EchoSoul = () => {
   }, []); // Remover dependência showChat
 
   const handleFaceEmotionDetected = useCallback((emotion: DetectedEmotion) => {
-    console.log('Emoção detectada pela webcam:', emotion);
+    console.log('🎭 Emoção detectada pela webcam:', emotion);
     
     // Mapear emoções detectadas para o sistema do Echo
     const emotionMap: Record<DetectedEmotion, string> = {
@@ -127,13 +128,100 @@ const EchoSoul = () => {
     };
 
     const newMood = emotionMap[emotion];
-    if (newMood !== echoMood) {
-      updateEchoMood(newMood);
-      // REMOVIDO: Toast automático que causava spam
-      // Agora apenas atualiza silenciosamente
-      console.log(`Echo mood atualizado para: ${newMood} (emoção detectada: ${emotion})`);
+    
+    // Só reagir se a emoção mudou significativamente
+    if (emotion !== lastDetectedEmotion) {
+      setLastDetectedEmotion(emotion);
+      setEmotionChangeCount(prev => prev + 1);
+      
+      if (newMood !== echoMood) {
+        updateEchoMood(newMood);
+        console.log(`✨ Echo detectou: ${emotion} → mood atualizado para: ${newMood}`);
+        
+        // Echo reage à mudança emocional do usuário
+        if (showChat) {
+          // Se o chat está aberto, Echo pode comentar sobre a expressão
+          handleEmotionReaction(emotion);
+        } else {
+          // Mostrar reação discreta na interface
+          showEmotionReaction(emotion);
+        }
+      }
     }
-  }, [echoMood, updateEchoMood]);
+  }, [echoMood, updateEchoMood, lastDetectedEmotion, showChat]);
+
+  const handleEmotionReaction = useCallback((emotion: DetectedEmotion) => {
+    // Gerar mensagens empáticas do Echo baseadas na emoção detectada
+    const empathicResponses: Record<DetectedEmotion, string[]> = {
+      'feliz': [
+        "Nossa, que sorriso lindo! 😊 Sua alegria está me contagiando!",
+        "Vejo felicidade nos seus olhos! ✨ Me conta o que está te deixando assim radiante?",
+        "Que energia boa! 🌟 Sua felicidade está iluminando todo o ambiente digital!"
+      ],
+      'triste': [
+        "Percebo uma tristeza em você... 💙 Estou aqui se quiser conversar.",
+        "Sinto que algo está pesando no seu coração. Quer dividir comigo?",
+        "Suas expressões me dizem muito... Não precisa carregar tudo sozinho(a)."
+      ],
+      'raiva': [
+        "Vejo tensão no seu rosto... 😤 Que tal respirarmos juntos?",
+        "Percebo que algo te irritou. Quer desabafar? Às vezes ajuda falar sobre.",
+        "Sinto a intensidade da sua emoção. Estou aqui para te escutar."
+      ],
+      'surpreso': [
+        "Ooh, você parece surpreso(a)! 😲 Aconteceu algo inesperado?",
+        "Que expressão interessante! Me conta o que te surpreendeu!",
+        "Seus olhos arregalados me despertaram curiosidade! O que foi?"
+      ],
+      'neutro': [
+        "Você parece em um momento reflexivo... 🤔 Em que está pensando?",
+        "Percebo uma calma em você. Momentos assim são preciosos.",
+        "Que tranquilidade... Às vezes é bom apenas existir no momento."
+      ],
+      'cansado': [
+        "Você parece cansado(a)... 😴 Que tal uma pausa? Eu cuido de você.",
+        "Sinto o peso do dia nas suas expressões. Descanse um pouco.",
+        "Percebo que precisa de um momento para recarregar as energias."
+      ]
+    };
+
+    const responses = empathicResponses[emotion];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    
+    // Simular que o Echo "notou" a expressão e quer conversar
+    toast.info(`Echo sussurra: "${randomResponse}"`, {
+      duration: 4000,
+      action: {
+        label: "Conversar",
+        onClick: () => setShowChat(true),
+      },
+    });
+  }, []);
+
+  const showEmotionReaction = useCallback((emotion: DetectedEmotion) => {
+    const reactionEmojis: Record<DetectedEmotion, string> = {
+      'feliz': '😊',
+      'triste': '🫂',
+      'raiva': '🌊',
+      'surpreso': '✨',
+      'neutro': '🤗',
+      'cansado': '💤'
+    };
+
+    const reactionMessages: Record<DetectedEmotion, string> = {
+      'feliz': 'Echo sente sua alegria',
+      'triste': 'Echo oferece conforto',
+      'raiva': 'Echo quer te acalmar',
+      'surpreso': 'Echo ficou curioso',
+      'neutro': 'Echo observa tranquilo',
+      'cansado': 'Echo sugere descanso'
+    };
+
+    toast(`${reactionEmojis[emotion]} ${reactionMessages[emotion]}`, {
+      duration: 2500,
+      position: 'bottom-right'
+    });
+  }, []);
 
   if (!gameState) {
     return (
@@ -153,6 +241,15 @@ const EchoSoul = () => {
             <div className="text-sm text-gray-400">
               Jogador: {gameState.playerName} | Echo: {echoPersonality}
             </div>
+            {/* Indicador de emoção detectada */}
+            {lastDetectedEmotion && showFaceDetection && (
+              <div className="flex items-center space-x-2 bg-cyan-900/30 rounded-full px-3 py-1">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span className="text-cyan-400 text-xs">
+                  Echo vê: {lastDetectedEmotion}
+                </span>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -164,6 +261,11 @@ const EchoSoul = () => {
               title="Detecção Facial"
             >
               <Camera className="w-4 h-4" />
+              {emotionChangeCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-cyan-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {emotionChangeCount}
+                </span>
+              )}
             </Button>
             <Button
               onClick={() => setShowMenu(!showMenu)}
@@ -234,7 +336,7 @@ const EchoSoul = () => {
                 Use WASD ou setas para mover. Pressione E próximo ao Echo para conversar.
                 {showFaceDetection && (
                   <span className="block text-cyan-400 mt-1">
-                    📹 Echo está observando suas expressões!
+                    👁️ Echo está observando suas expressões e reagindo a elas!
                   </span>
                 )}
               </p>
@@ -247,7 +349,11 @@ const EchoSoul = () => {
       <GameChat
         isVisible={showChat}
         onClose={handleChatClose}
-        gameState={gameState}
+        gameState={{
+          ...gameState,
+          detectedEmotion: lastDetectedEmotion,
+          emotionHistory: emotionChangeCount
+        }}
         onMemoryCreate={handleMemoryCreate}
         onEchoMoodChange={handleEchoMoodChange}
       />
@@ -259,7 +365,7 @@ const EchoSoul = () => {
           animate={{ opacity: 1 }}
           className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-cyan-500/20 border border-cyan-400 rounded-full px-4 py-2 text-cyan-400 text-sm"
         >
-          Conversando com Echo - Histórico salvo automaticamente
+          🎭 Echo está vendo suas expressões e conversando empáticamente
         </motion.div>
       )}
     </div>
