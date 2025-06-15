@@ -68,24 +68,22 @@ export class CharacterSprites {
       this.drawCharacterOnCanvas(context, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
     });
 
-    // Create sprite sheet synchronously using canvas directly
+    // Create sprite sheet synchronously
     try {
-      // Add the canvas as a texture first
-      scene.textures.addCanvas(framesKey, canvas);
+      // Create ImageData from canvas
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Then convert it to a sprite sheet
-      const texture = scene.textures.get(framesKey);
-      if (texture) {
-        // Remove the canvas texture and create the sprite sheet
-        scene.textures.remove(framesKey);
+      // Create a new canvas for the texture
+      const textureCanvas = document.createElement('canvas');
+      textureCanvas.width = canvas.width;
+      textureCanvas.height = canvas.height;
+      const textureContext = textureCanvas.getContext('2d');
+      
+      if (textureContext) {
+        textureContext.putImageData(imageData, 0, 0);
         
-        // Create data URL from canvas for the sprite sheet
-        const dataURL = canvas.toDataURL();
-        const img = new Image();
-        img.src = dataURL;
-        
-        // Add sprite sheet synchronously
-        scene.textures.addSpriteSheet(framesKey, img, {
+        // Add sprite sheet directly from canvas
+        scene.textures.addSpriteSheet(framesKey, textureCanvas, {
           frameWidth: frameWidth,
           frameHeight: frameHeight
         });
