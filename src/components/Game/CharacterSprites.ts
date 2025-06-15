@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 export class CharacterSprites {
   static createPlayerSprite(scene: Phaser.Scene, modelType: string) {
     const colors = this.getPlayerColors(modelType);
-    this.createWalkingSprites(scene, `player_${modelType}`, colors);
+    return this.createWalkingSprites(scene, `player_${modelType}`, colors);
   }
 
   static createEchoSprite(scene: Phaser.Scene, mood: string) {
@@ -14,7 +14,7 @@ export class CharacterSprites {
       skin: 0xfdbcb4
     };
 
-    this.createWalkingSprites(scene, `echo_${mood}`, colors);
+    return this.createWalkingSprites(scene, `echo_${mood}`, colors);
   }
 
   private static getPlayerColors(modelType: string) {
@@ -32,66 +32,43 @@ export class CharacterSprites {
     }
   }
 
-  static createWalkingSprites(scene: Phaser.Scene, spriteKey: string, colors: any) {
-    const frameWidth = 32;
-    const frameHeight = 32;
-    const framesKey = `${spriteKey}_frames`;
+  static createWalkingSprites(scene: Phaser.Scene, spriteKey: string, colors: any): Promise<void> {
+    return new Promise((resolve) => {
+      const frameWidth = 32;
+      const frameHeight = 32;
+      const framesKey = `${spriteKey}_frames`;
 
-    console.log('Creating walking sprites for:', spriteKey);
+      console.log('Creating walking sprites for:', spriteKey);
 
-    // Remove existing textures if they exist
-    if (scene.textures.exists(framesKey)) {
-      scene.textures.remove(framesKey);
-      console.log('Removed existing texture:', framesKey);
-    }
+      // Remove existing textures if they exist
+      if (scene.textures.exists(framesKey)) {
+        scene.textures.remove(framesKey);
+        console.log('Removed existing texture:', framesKey);
+      }
 
-    // Create a canvas element
-    const canvas = document.createElement('canvas');
-    canvas.width = frameWidth * 4;
-    canvas.height = frameHeight;
-    
-    const context = canvas.getContext('2d');
-    if (!context) {
-      console.error('Failed to get canvas context for:', framesKey);
-      return;
-    }
-    
-    // Clear the canvas
-    context.clearRect(0, 0, canvas.width, canvas.height);
+      // Create graphics object instead of canvas for better Phaser integration
+      const graphics = scene.add.graphics();
+      
+      // Create sprite sheet using graphics
+      const poses = ['idle', 'left-step', 'idle', 'right-step'];
+      
+      poses.forEach((pose, index) => {
+        graphics.clear();
+        this.drawCharacterOnGraphics(graphics, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
+      });
 
-    // Create 4 frames of animation
-    const poses = ['idle', 'left-step', 'idle', 'right-step'];
-    
-    poses.forEach((pose, index) => {
-      this.drawCharacterOnCanvas(context, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
+      // Generate texture from graphics
+      graphics.generateTexture(framesKey, frameWidth * 4, frameHeight);
+      
+      // Clean up graphics object
+      graphics.destroy();
+
+      console.log('Successfully created sprite sheet:', framesKey);
+      resolve();
     });
-
-    // Create sprite sheet synchronously
-    try {
-      // Convert canvas to data URL
-      const dataURL = canvas.toDataURL();
-      
-      // Create an image element
-      const img = new Image();
-      img.onload = () => {
-        // Add sprite sheet from image
-        scene.textures.addSpriteSheet(framesKey, img, {
-          frameWidth: frameWidth,
-          frameHeight: frameHeight
-        });
-        
-        console.log('Successfully created sprite sheet:', framesKey);
-      };
-      
-      // Set the source to trigger the load
-      img.src = dataURL;
-        
-    } catch (error) {
-      console.error('Error creating sprite sheet:', framesKey, error);
-    }
   }
 
-  static drawCharacterOnCanvas(context: CanvasRenderingContext2D, offsetX: number, offsetY: number, frameWidth: number, frameHeight: number, colors: any, pose: string) {
+  static drawCharacterOnGraphics(graphics: Phaser.GameObjects.Graphics, offsetX: number, offsetY: number, frameWidth: number, frameHeight: number, colors: any, pose: string) {
     // Centralizar o personagem no frame
     const centerX = offsetX + frameWidth / 2;
     const centerY = offsetY + frameHeight / 2;
@@ -112,8 +89,8 @@ export class CharacterSprites {
 
     // Função helper para desenhar retângulos
     const drawRect = (x: number, y: number, w: number, h: number, color: number) => {
-      context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
-      context.fillRect(centerX + x - frameWidth/2, centerY + y - frameHeight/2, w, h);
+      graphics.fillStyle(color);
+      graphics.fillRect(centerX + x - frameWidth/2, centerY + y - frameHeight/2, w, h);
     };
 
     // Cabeça

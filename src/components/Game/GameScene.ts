@@ -35,12 +35,12 @@ export class GameScene extends Phaser.Scene {
     this.onMemoryTrigger = onMemoryTrigger;
   }
 
-  preload() {
+  async preload() {
     console.log('Preloading sprites for player model:', this.gameState.playerModel, 'and echo mood:', this.gameState.echoMood);
     
-    // Criar apenas os sprites necessários
-    CharacterSprites.createPlayerSprite(this, this.gameState.playerModel);
-    CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
+    // Criar sprites de forma síncrona e aguardar conclusão
+    await CharacterSprites.createPlayerSprite(this, this.gameState.playerModel);
+    await CharacterSprites.createEchoSprite(this, this.gameState.echoMood);
 
     // Obstáculos
     this.add.graphics()
@@ -377,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  public updateEchoMood(newMood: string) {
+  public async updateEchoMood(newMood: string) {
     if (!this.isSceneReady || !this.add) {
       this.gameState.echoMood = newMood;
       return;
@@ -385,11 +385,10 @@ export class GameScene extends Phaser.Scene {
 
     this.gameState.echoMood = newMood;
     
-    const textureKey = `echo_${newMood}_frames`;
-    if (!this.textures.exists(textureKey)) {
-      CharacterSprites.createEchoSprite(this, newMood);
-    }
+    // Criar nova textura para o mood
+    await CharacterSprites.createEchoSprite(this, newMood);
     
+    const textureKey = `echo_${newMood}_frames`;
     if (this.echo && this.textures.exists(textureKey)) {
       this.echo.setTexture(textureKey, 0);
       
