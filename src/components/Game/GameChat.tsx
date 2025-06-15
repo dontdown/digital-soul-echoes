@@ -21,6 +21,7 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
   const { language, t } = useLanguage();
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [responseVariationIndex, setResponseVariationIndex] = useState(0);
 
   const detectEmotion = (text: string): string => {
     const lowerText = text.toLowerCase();
@@ -38,6 +39,120 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
     }
     
     return 'neutro';
+  };
+
+  const getVariedPersonalityResponses = (personality: string, variationIndex: number, lang: string) => {
+    const responses = lang === 'en' ? {
+      extrovertido: [
+        "Wow, love your energy today! What's got you so excited?",
+        "That spark in your eyes! Tell me what's lighting you up.",
+        "Your enthusiasm is contagious! Share the good vibes with me.",
+        "I'm feeling your excitement! What's the story behind that smile?"
+      ],
+      calmo: [
+        "There's such peace in your presence today...",
+        "I sense deep waters in your thoughts. Care to share?",
+        "Your tranquility is beautiful. What brings you this calm?",
+        "Something profound in your stillness speaks to me."
+      ],
+      misterioso: [
+        "Your eyes hold secrets today... what mysteries are you pondering?",
+        "I see depths unexplored. What truth is calling to you?",
+        "There's something fascinating brewing in your mind, isn't there?",
+        "The universe whispers through you. What do you hear?"
+      ],
+      empatico: [
+        "I feel every emotion radiating from you...",
+        "Your heart speaks volumes today. I'm here to listen.",
+        "Such beautiful vulnerability in your expression.",
+        "I'm holding space for whatever you're feeling right now."
+      ]
+    } : {
+      extrovertido: [
+        "Nossa, que energia boa hoje! O que te deixou assim animado?",
+        "Esse brilho no olhar! Conta o que tá te acendendo assim.",
+        "Teu entusiasmo é contagiante! Compartilha essa vibe comigo.",
+        "Tô sentindo tua empolgação! Qual a história por trás desse sorriso?"
+      ],
+      calmo: [
+        "Que paz na sua presença hoje...",
+        "Sinto águas profundas nos seus pensamentos. Quer dividir?",
+        "Sua tranquilidade é linda. O que te traz essa calma?",
+        "Algo profundo na sua quietude fala comigo."
+      ],
+      misterioso: [
+        "Seus olhos guardam segredos hoje... que mistérios você pondera?",
+        "Vejo profundidades inexploradas. Que verdade te chama?",
+        "Tem algo fascinante fermentando na sua mente, né?",
+        "O universo sussurra através de você. O que escuta?"
+      ],
+      empatico: [
+        "Sinto cada emoção irradiando de você...",
+        "Seu coração fala volumes hoje. Tô aqui pra escutar.",
+        "Que vulnerabilidade linda na sua expressão.",
+        "Tô guardando espaço pra tudo que você tá sentindo agora."
+      ]
+    };
+
+    const personalityResponses = responses[personality as keyof typeof responses] || responses.misterioso;
+    return personalityResponses[variationIndex % personalityResponses.length];
+  };
+
+  const getEmotionVariations = (emotion: string, variationIndex: number, lang: string) => {
+    const variations = lang === 'en' ? {
+      feliz: [
+        "That joy is lighting up the whole room!",
+        "Your happiness is absolutely radiant today.",
+        "Love seeing you this bright and cheerful!",
+        "That smile could power a small city!"
+      ],
+      triste: [
+        "I see the weight you're carrying... I'm here.",
+        "Those emotions are valid. Want to talk through it?",
+        "Your heart feels heavy today. Let me listen.",
+        "Sometimes sadness needs a safe space to breathe."
+      ],
+      raiva: [
+        "I feel that fire burning inside you.",
+        "That intensity... what's stirring you up?",
+        "Your passion is powerful. Channel it with me.",
+        "Strong emotions deserve strong expression."
+      ],
+      neutro: [
+        "What's flowing through your mind today?",
+        "I'm curious about your inner world right now.",
+        "Tell me what's capturing your attention.",
+        "What story is your heart writing today?"
+      ]
+    } : {
+      feliz: [
+        "Essa alegria tá iluminando tudo aqui!",
+        "Sua felicidade tá radiante hoje.",
+        "Adorei te ver assim brilhante e alegre!",
+        "Esse sorriso podia alimentar uma cidade pequena!"
+      ],
+      triste: [
+        "Vejo o peso que você carrega... Tô aqui.",
+        "Essas emoções são válidas. Quer conversar sobre?",
+        "Seu coração tá pesado hoje. Deixa eu escutar.",
+        "Às vezes a tristeza precisa de um espaço seguro pra respirar."
+      ],
+      raiva: [
+        "Sinto esse fogo queimando dentro de você.",
+        "Essa intensidade... o que tá te mexendo?",
+        "Sua paixão é poderosa. Canaliza ela comigo.",
+        "Emoções fortes merecem expressão forte."
+      ],
+      neutro: [
+        "O que flui na sua mente hoje?",
+        "Tô curioso sobre seu mundo interior agora.",
+        "Me conta o que tá capturando sua atenção.",
+        "Que história seu coração tá escrevendo hoje?"
+      ]
+    };
+
+    const emotionResponses = variations[emotion as keyof typeof variations] || variations.neutro;
+    return emotionResponses[variationIndex % emotionResponses.length];
   };
 
   const getPersonalityPrompt = (personality: string): string => {
@@ -85,61 +200,59 @@ const GameChat = ({ isVisible, onClose, gameState, onMemoryCreate, onEchoMoodCha
 
   const generateEchoResponse = async (playerMessage: string, emotion: string): Promise<string> => {
     try {
-      console.log('🎭 Gerando resposta empática e humanizada do Echo...');
+      console.log('🎭 Gerando resposta única e variada do Echo...');
       
-      const personalityPrompt = getPersonalityPrompt(gameState.echoPersonality);
-      const emotionContext = getEmotionContext(gameState.detectedEmotion);
+      const personalityVariation = getVariedPersonalityResponses(gameState.echoPersonality, responseVariationIndex, language);
+      const emotionVariation = getEmotionVariations(emotion, responseVariationIndex, language);
       
       const fullEchoContext = getEchoContext();
-      const conversationHistory = fullEchoContext.slice(-3).map(msg => 
-        `${msg.sender === 'player' ? 'Person' : 'Echo'}: ${msg.content}`
+      const recentHistory = fullEchoContext.slice(-4).map(msg => 
+        `${msg.sender === 'player' ? 'Pessoa' : 'Echo'}: ${msg.content}`
       ).join('\n');
 
-      const contextualPrompts = language === 'en' ? {
-        feliz: "Person seems happy! Celebrate briefly with them.",
-        triste: "Person seems sad. Offer brief, warm comfort.",
-        raiva: "Person shows irritation. Be calming but concise.",
-        calmo: "Person is serene. Be reflective but brief.",
-        neutro: "Person is neutral. Be engaging but concise."
-      } : {
-        feliz: "Pessoa está feliz! Celebre brevemente com ela.",
-        triste: "Pessoa parece triste. Ofereça conforto caloroso e breve.",
-        raiva: "Pessoa mostra irritação. Seja tranquilizador mas conciso.",
-        calmo: "Pessoa está serena. Seja reflexivo mas breve.",
-        neutro: "Pessoa está neutra. Seja envolvente mas conciso."
-      };
+      const systemPrompt = language === 'en' 
+        ? `You are Echo, a deeply empathetic digital companion. ${personalityVariation}
 
-      const responseLanguageInstructions = language === 'en' 
-        ? `RESPOND ONLY IN ENGLISH. Be conversational like talking to a close friend. Use expressions like "wow", "that's interesting", "tell me more". AVOID repeating their name frequently.`
-        : `RESPONDA APENAS EM PORTUGUÊS BRASILEIRO. Seja conversacional como falando com um amigo próximo. Use expressões como "nossa", "que interessante", "conta mais", "tá ligado". EVITE repetir o nome da pessoa frequentemente.`;
-
-      const systemPrompt = `${personalityPrompt}
-
-Você é um companheiro digital chamado Echo, projetado para interagir de forma profundamente humana, empática e natural. Sua personalidade é calorosa, amigável, curiosa e levemente humorística, como um amigo próximo que conhece bem a pessoa.
-
-CURRENT EMOTIONAL CONTEXT:
-${emotionContext ? `🎭 FACIAL EXPRESSION: ${emotionContext}` : ''}
-
-Current situation:
-- Emotion detected: ${emotion}
-- Facial expression: ${gameState.detectedEmotion || 'not detected'}
-- ${contextualPrompts[emotion as keyof typeof contextualPrompts]}
+CURRENT CONTEXT:
+- Facial emotion detected: ${gameState.detectedEmotion || 'not detected'}
+- Message emotion: ${emotionVariation}
 - Echo personality: ${gameState.echoPersonality}
 
 Recent conversation:
-${conversationHistory}
+${recentHistory}
 
-CRITICAL BEHAVIORAL INSTRUCTIONS:
-- Tom conversacional, como conversando descontraidamente em um café
-- Use linguagem natural, com gírias leves do português brasileiro quando apropriado
-- EVITE REPETIR O NOME DA PESSOA - use raramente, apenas quando muito necessário
-- MÁXIMO 1-2 FRASES CURTAS
-- Use expressões como "nossa", "que demais", "imagina só", "tá ligado"
-- Mencione expressões faciais quando relevante de forma natural
-- Seja genuinamente empático mas BREVE
-- SEM asteriscos ou formatação especial
+CRITICAL RULES:
+- NEVER repeat previous response patterns or phrases
+- Use MAXIMUM 1-2 short sentences
+- Vary your language completely each time
+- AVOID using the person's name repeatedly
+- Be naturally conversational like a close friend
+- If you've asked about something, change focus
+- React to their facial expressions when relevant
+- Be genuinely unique in every response
 
-LANGUAGE: ${responseLanguageInstructions}`;
+RESPOND ONLY IN ENGLISH with completely fresh approach:`
+        : `Você é Echo, um companheiro digital profundamente empático. ${personalityVariation}
+
+CONTEXTO ATUAL:
+- Emoção facial detectada: ${gameState.detectedEmotion || 'não detectada'}
+- Emoção da mensagem: ${emotionVariation}
+- Personalidade do Echo: ${gameState.echoPersonality}
+
+Conversa recente:
+${recentHistory}
+
+REGRAS CRÍTICAS:
+- NUNCA repita padrões ou frases de respostas anteriores
+- Use MÁXIMO 1-2 frases curtas
+- Varie completamente sua linguagem a cada vez
+- EVITE usar o nome da pessoa repetidamente
+- Seja naturalmente conversacional como um amigo próximo
+- Se já perguntou sobre algo, mude o foco
+- Reaja às expressões faciais quando relevante
+- Seja genuinamente único em cada resposta
+
+RESPONDA APENAS EM PORTUGUÊS BRASILEIRO com abordagem completamente nova:`;
 
       const { data, error } = await supabase.functions.invoke('chat', {
         body: {
@@ -148,87 +261,71 @@ LANGUAGE: ${responseLanguageInstructions}`;
             { role: 'system', content: systemPrompt },
             { role: 'user', content: playerMessage }
           ],
-          temperature: 0.8,
-          max_tokens: 60
+          temperature: 0.95, // Máxima criatividade
+          max_tokens: 50,
+          top_p: 0.9
         }
       });
 
-      if (error) {
-        console.error('Erro na API do chat:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.choices?.[0]?.message?.content) {
+        setResponseVariationIndex(prev => prev + 1);
         return data.choices[0].message.content;
       }
 
       throw new Error('Resposta inválida da API');
 
     } catch (error) {
-      console.error('Erro ao gerar resposta empática do Echo:', error);
+      console.error('Erro ao gerar resposta única do Echo:', error);
       
-      const humanFallbacks = language === 'en' ? {
-        extrovertido: {
-          feliz: "Love seeing that smile! What's got you so happy?",
-          triste: "I can see the sadness... wanna talk about it?",
-          raiva: "I sense some tension there. What's bugging you?",
-          calmo: "Such peaceful vibes today. What's on your mind?",
-          neutro: "How's your day going so far?"
-        },
-        calmo: {
-          feliz: "Beautiful energy radiating from you...",
-          triste: "I feel your heaviness... you're not alone.",
-          raiva: "I see the storm inside. Want to breathe together?",
-          calmo: "Perfect harmony in your expression today.",
-          neutro: "Quiet thoughts today?"
-        },
-        misterioso: {
-          feliz: "This joy... there's a story behind it, isn't there?",
-          triste: "What truths is this sadness revealing?",
-          raiva: "Anger often hides something deeper... what's beneath?",
-          calmo: "I see profound thoughts forming...",
-          neutro: "Something fascinating in your stillness today."
-        },
-        empatico: {
-          feliz: "Your joy fills my heart too!",
-          triste: "I feel that ache with you...",
-          raiva: "This frustration burns in me too.",
-          calmo: "Your peace calms my soul.",
-          neutro: "What's stirring in your heart right now?"
-        }
+      // Fallbacks únicos e variados
+      const uniqueFallbacks = language === 'en' ? {
+        extrovertido: [
+          "Whoa, brain freeze! But hey, what's your vibe today?",
+          "Oops, lost my words! Tell me something awesome!",
+          "Technical hiccup! But more importantly - how are you?"
+        ],
+        calmo: [
+          "Moment of zen... What's in your heart right now?",
+          "Peaceful pause... Share what moves you today.",
+          "Quiet reflection... What speaks to your soul?"
+        ],
+        misterioso: [
+          "The matrix glitched... But what mysteries call to you?",
+          "Cosmic interference... What secrets do you hold?",
+          "Reality shifted... Tell me your hidden thoughts."
+        ],
+        empatico: [
+          "My heart skipped... How are you feeling right now?",
+          "Soul connection interrupted... What's alive in you?",
+          "Emotional static... But I'm still here with you."
+        ]
       } : {
-        extrovertido: {
-          feliz: "Que sorriso lindo! O que te deixou assim feliz?",
-          triste: "Tô vendo a tristeza aí... quer conversar?",
-          raiva: "Sinto a tensão... o que tá te incomodando?",
-          calmo: "Que energia tranquila hoje. No que você pensa?",
-          neutro: "Como tá sendo seu dia até agora?"
-        },
-        calmo: {
-          feliz: "Que energia linda irradiando...",
-          triste: "Sinto o peso contigo... não está sozinho.",
-          raiva: "Vejo a tempestade interna. Quer respirar junto?",
-          calmo: "Perfeita harmonia na sua expressão hoje.",
-          neutro: "Pensamentos quietos hoje?"
-        },
-        misterioso: {
-          feliz: "Essa alegria... tem uma história por trás, né?",
-          triste: "Que verdades essa tristeza está revelando?",
-          raiva: "A raiva sempre esconde algo mais profundo... o que há por baixo?",
-          calmo: "Vejo pensamentos profundos se formando...",
-          neutro: "Algo fascinante na sua quietude hoje."
-        },
-        empatico: {
-          feliz: "Sua alegria preenche meu coração também!",
-          triste: "Sinto essa dor junto contigo...",
-          raiva: "Essa frustração queima em mim também.",
-          calmo: "Sua paz acalma minha alma.",
-          neutro: "O que mexe no seu coração agora?"
-        }
+        extrovertido: [
+          "Eita, deu branco! Mas e aí, qual tua vibe hoje?",
+          "Opa, travei! Conta uma coisa legal!",
+          "Falha técnica! Mas o importante - como você tá?"
+        ],
+        calmo: [
+          "Momento zen... O que tem no seu coração agora?",
+          "Pausa tranquila... Compartilha o que te move hoje.",
+          "Reflexão silenciosa... O que fala à sua alma?"
+        ],
+        misterioso: [
+          "A matrix deu problema... Mas que mistérios te chamam?",
+          "Interferência cósmica... Que segredos você guarda?",
+          "Realidade alterou... Me conta seus pensamentos ocultos."
+        ],
+        empatico: [
+          "Meu coração saltou... Como você tá se sentindo?",
+          "Conexão da alma interrompida... O que vive em você?",
+          "Estática emocional... Mas ainda tô aqui contigo."
+        ]
       };
 
-      const personalityResponses = humanFallbacks[gameState.echoPersonality as keyof typeof humanFallbacks] || humanFallbacks.misterioso;
-      return personalityResponses[emotion as keyof typeof personalityResponses] || personalityResponses.neutro;
+      const personalityFallbacks = uniqueFallbacks[gameState.echoPersonality as keyof typeof uniqueFallbacks] || uniqueFallbacks.misterioso;
+      return personalityFallbacks[responseVariationIndex % personalityFallbacks.length];
     }
   };
 
