@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -26,20 +27,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Função para carregar dados do Echo do Supabase
   const loadEchoFromDatabase = async (userId: string) => {
     try {
+      console.log('🔍 Tentando carregar Echo para usuário:', userId);
+      
       const { data, error } = await supabase
         .from('game_state')
         .select('*')
         .eq('id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao carregar estado do jogo:', error);
+        console.error('❌ Erro ao carregar estado do jogo:', error);
         return;
       }
 
       if (data) {
+        console.log('✅ Echo encontrado no banco:', data);
+        
         // Carregar dados do Echo do banco para o store
         setPlayerData({
           name: data.player_name,
@@ -50,25 +53,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         updateEchoMood(data.echo_mood);
         markEchoAsCreated();
         
-        console.log('Echo carregado do banco:', data);
+        console.log('✅ Echo carregado no store local');
       } else {
-        console.log('Nenhum Echo encontrado no banco para este usuário');
+        console.log('⚠️ Nenhum Echo encontrado no banco para este usuário');
         // Limpar dados locais se não há Echo no banco
         clearData();
       }
     } catch (error) {
-      console.error('Erro ao buscar estado do jogo:', error);
+      console.error('❌ Erro ao buscar estado do jogo:', error);
     }
   };
 
   useEffect(() => {
     const getSession = async () => {
+      console.log('🚀 Verificando sessão inicial...');
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       
       // Se há usuário, carregar dados do Echo
       if (session?.user) {
+        console.log('👤 Usuário encontrado na sessão:', session.user.id);
         await loadEchoFromDatabase(session.user.id);
+      } else {
+        console.log('❌ Nenhum usuário na sessão');
       }
       
       setLoading(false);
@@ -76,7 +83,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     getSession();
 
-    supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
+      console.log('🔄 Auth state change:', event, session?.user?.id);
+      
       if (event === 'INITIAL_SESSION') {
         setUser(session?.user ?? null);
       } else {
@@ -85,6 +94,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Carregar dados do Echo quando usuário faz login
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        console.log('🔑 Login detectado, carregando Echo...');
         setTimeout(async () => {
           await loadEchoFromDatabase(session.user.id);
         }, 0);
@@ -92,11 +102,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Limpar dados quando usuário faz logout
       if (event === 'SIGNED_OUT') {
+        console.log('🚪 Logout detectado, limpando dados...');
         clearData();
       }
       
       setLoading(false);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {

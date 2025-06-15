@@ -14,7 +14,7 @@ import { Sparkles } from "lucide-react";
 const CreateEcho = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setPlayerData, setEchoPersonality } = useEchoStore();
+  const { setPlayerData, setEchoPersonality, updateEchoMood, markEchoAsCreated } = useEchoStore();
   const [playerName, setPlayerName] = useState("");
   const [mood, setMood] = useState("");
   const [preference, setPreference] = useState("");
@@ -44,11 +44,15 @@ const CreateEcho = () => {
 
     try {
       // Primeiro, verificar se já existe um Echo para este usuário e atualizar
-      const { data: existingEcho } = await supabase
+      const { data: existingEcho, error: selectError } = await supabase
         .from('game_state')
         .select('id')
         .eq('id', user.id)
         .maybeSingle();
+
+      if (selectError) {
+        console.error('Erro ao verificar Echo existente:', selectError);
+      }
 
       if (existingEcho) {
         // Atualizar Echo existente
@@ -66,8 +70,9 @@ const CreateEcho = () => {
           .eq('id', user.id);
 
         if (error) throw error;
+        console.log('Echo atualizado no banco de dados');
       } else {
-        // Criar novo Echo
+        // Criar novo Echo usando user.id como chave primária
         const { error } = await supabase
           .from('game_state')
           .insert({
@@ -81,11 +86,16 @@ const CreateEcho = () => {
           });
 
         if (error) throw error;
+        console.log('Echo criado no banco de dados');
       }
 
       // Atualizar o store local
       setPlayerData({ name: playerName, mood, preference });
       setEchoPersonality(personality);
+      updateEchoMood('neutro');
+      markEchoAsCreated(); // IMPORTANTE: Marcar como criado após salvar no banco
+      
+      console.log('Echo salvo no store local:', { playerName, mood, preference, personality });
       
       toast.success("Echo criado com sucesso!");
       navigate("/echosoul");
