@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ const Mirror = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
       <div className="max-w-2xl mx-auto">
         <Button
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/echosoul")}
           variant="ghost"
           className="text-cyan-400 hover:text-cyan-300 mb-8"
         >
