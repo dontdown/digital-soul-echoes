@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js';
+import { useModelDownloader, createModelURLs } from './useModelDownloader';
 
 export type DetectedEmotion = 'feliz' | 'triste' | 'raiva' | 'surpreso' | 'neutro' | 'cansado';
 
@@ -21,15 +22,20 @@ interface UseFaceDetectionReturn {
   isDetecting: boolean;
   error: string | null;
   isSimulated: boolean;
+  isDownloading: boolean;
+  downloadProgress: number;
+  needsDownload: boolean;
   loadModels: () => Promise<void>;
   startDetection: (videoElement: HTMLVideoElement) => void;
   stopDetection: () => void;
+  downloadModels: () => Promise<void>;
 }
 
-// Global flags to prevent multiple simultaneous model loads
+// Global flags
 let isLoadingModels = false;
 let globalModelsLoaded = false;
 let globalIsSimulated = false;
+let globalModelURLs: Record<string, string> = {};
 
 export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) => void): UseFaceDetectionReturn => {
   const [isModelLoaded, setIsModelLoaded] = useState(globalModelsLoaded);
@@ -38,7 +44,10 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSimulated, setIsSimulated] = useState(globalIsSimulated);
+  const [needsDownload, setNeedsDownload] = useState(false);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { isDownloading, downloadProgress, downloadModels: downloadModelFiles, checkModelsIntegrity } = useModelDownloader();
   
   // Histórico para suavização
   const emotionHistoryRef = useRef<EmotionHistory[]>([]);
@@ -50,79 +59,83 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   const EMOTION_CHANGE_COOLDOWN = 3000; // 3 segundos
   const STABILITY_BONUS = 0.15;
 
+  const downloadModels = async () => {
+    const success = await downloadModelFiles();
+    if (success) {
+      setNeedsDownload(false);
+      // Tentar carregar os modelos novamente
+      await loadModels();
+    }
+  };
+
   const loadModels = async () => {
-    // Se já carregou antes, usar estado global
     if (globalModelsLoaded) {
       setIsModelLoaded(true);
       setIsSimulated(globalIsSimulated);
+      setNeedsDownload(false);
       return;
     }
 
-    // Prevenir múltiplos carregamentos simultâneos
-    if (isLoadingModels) {
-      return;
-    }
-
+    if (isLoadingModels) return;
     isLoadingModels = true;
     
     try {
-      console.log('🤖 Tentando carregar modelos reais do face-api.js...');
+      console.log('🤖 Verificando modelos salvos...');
       setError(null);
       setIsSimulated(false);
+      setNeedsDownload(false);
       
-      const MODEL_URL = '/models';
+      // Primeiro verificar se temos modelos salvos válidos
+      const hasValidModels = await checkModelsIntegrity();
       
-      // Verificar se os arquivos existem primeiro
-      console.log('🔍 Verificando disponibilidade dos modelos...');
-      const testUrls = [
-        `${MODEL_URL}/tiny_face_detector_model-weights_manifest.json`,
-        `${MODEL_URL}/face_expression_model-weights_manifest.json`,
-        `${MODEL_URL}/face_landmark_68_model-weights_manifest.json`
-      ];
-
-      for (const url of testUrls) {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Model file not found: ${url}`);
-        }
-        console.log(`✅ Modelo encontrado: ${url}`);
+      if (!hasValidModels) {
+        console.log('❌ Modelos não encontrados ou corrompidos');
+        setNeedsDownload(true);
+        throw new Error('Modelos precisam ser baixados');
       }
-
-      // Carregar modelos um por vez para melhor diagnóstico
+      
+      // Criar URLs dos modelos salvos
+      console.log('🔧 Criando URLs dos modelos...');
+      globalModelURLs = await createModelURLs();
+      
+      // Criar um servidor local temporário para os modelos
+      const modelBaseURL = 'blob:';
+      
+      // Carregar modelos um por vez
       console.log('📥 Carregando TinyFaceDetector...');
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.tinyFaceDetector.load(globalModelURLs['tiny_face_detector_model-weights_manifest.json']);
       console.log('✅ TinyFaceDetector carregado');
 
       console.log('📥 Carregando FaceExpressionNet...');
-      await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceExpressionNet.load(globalModelURLs['face_expression_model-weights_manifest.json']);
       console.log('✅ FaceExpressionNet carregado');
 
       console.log('📥 Carregando FaceLandmark68Net...');
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.load(globalModelURLs['face_landmark_68_model-weights_manifest.json']);
       console.log('✅ FaceLandmark68Net carregado');
 
       globalModelsLoaded = true;
       globalIsSimulated = false;
       setIsModelLoaded(true);
       setIsSimulated(false);
+      setNeedsDownload(false);
       console.log('🎉 Todos os modelos reais carregados com sucesso!');
       
     } catch (err: any) {
       console.log('⚠️ Erro ao carregar modelos reais:', err);
-      console.log('🔄 Ativando modo simulado como fallback...');
       
-      // Log detalhado do erro
-      if (err.message) {
-        console.log('📝 Detalhes do erro:', err.message);
+      if (err.message.includes('baixados')) {
+        console.log('📦 Modelos precisam ser baixados');
+        setNeedsDownload(true);
+        setError('Modelos precisam ser baixados pela primeira vez');
+      } else {
+        console.log('🔄 Ativando modo simulado como fallback...');
+        globalModelsLoaded = true;
+        globalIsSimulated = true;
+        setIsModelLoaded(true);
+        setIsSimulated(true);
+        setError(`Usando simulação: ${err.message}`);
       }
-      
-      // Ativar modo simulado
-      globalModelsLoaded = true;
-      globalIsSimulated = true;
-      setIsModelLoaded(true);
-      setIsSimulated(true);
-      setError(`Usando simulação: ${err.message}`);
-      
     } finally {
       isLoadingModels = false;
     }
@@ -301,6 +314,12 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
   useEffect(() => {
     return () => {
       stopDetection();
+      // Limpar URLs quando componente for desmontado
+      Object.values(globalModelURLs).forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, []);
 
@@ -311,8 +330,12 @@ export const useFaceDetection = (onEmotionChange?: (emotion: DetectedEmotion) =>
     isDetecting,
     error,
     isSimulated,
+    isDownloading,
+    downloadProgress,
+    needsDownload,
     loadModels,
     startDetection,
-    stopDetection
+    stopDetection,
+    downloadModels
   };
 };

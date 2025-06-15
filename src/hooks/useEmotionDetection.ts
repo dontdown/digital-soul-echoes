@@ -13,10 +13,14 @@ interface UseEmotionDetectionReturn {
   isDetecting: boolean;
   error: string | null;
   isSimulated: boolean;
+  isDownloading: boolean;
+  downloadProgress: number;
+  needsDownload: boolean;
   switchModel: (model: EmotionModel) => void;
   loadModels: () => Promise<void>;
   startDetection: (videoElement: HTMLVideoElement) => void;
   stopDetection: () => void;
+  downloadModels: () => Promise<void>;
 }
 
 export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion) => void): UseEmotionDetectionReturn => {
@@ -30,12 +34,8 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   }, [currentModel, faceApiHook, huggingFaceHook]);
   
   const switchModel = useCallback((model: EmotionModel) => {
-    // Parar detecção atual
     getCurrentHook().stopDetection();
-    
-    // Mudar modelo
     setCurrentModel(model);
-    
     console.log(`🔄 Alternando para modelo: ${model}`);
   }, [getCurrentHook]);
   
@@ -46,6 +46,12 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       await huggingFaceHook.loadModel();
     }
   }, [currentModel, faceApiHook, huggingFaceHook]);
+  
+  const downloadModels = useCallback(async () => {
+    if (currentModel === 'face-api') {
+      await faceApiHook.downloadModels();
+    }
+  }, [currentModel, faceApiHook]);
   
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     getCurrentHook().startDetection(videoElement);
@@ -65,9 +71,13 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     isDetecting: hook.isDetecting,
     error: hook.error,
     isSimulated: currentModel === 'face-api' ? faceApiHook.isSimulated : false,
+    isDownloading: currentModel === 'face-api' ? faceApiHook.isDownloading : false,
+    downloadProgress: currentModel === 'face-api' ? faceApiHook.downloadProgress : 0,
+    needsDownload: currentModel === 'face-api' ? faceApiHook.needsDownload : false,
     switchModel,
     loadModels,
     startDetection,
-    stopDetection
+    stopDetection,
+    downloadModels
   };
 };
