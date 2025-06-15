@@ -1,4 +1,3 @@
-
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -54,10 +53,10 @@ export class CharacterSprites {
 
     atlasCanvas.refresh();
 
-    // Configurar o atlas no Phaser com frames nomeados - usar o source correto
+    // Configurar o atlas no Phaser com frames nomeados - usar a textura canvas diretamente
     if (!scene.textures.exists(`${spriteKey}_frames`)) {
       const canvasTexture = scene.textures.get(`${spriteKey}_atlas`);
-      scene.textures.addSpriteSheet(`${spriteKey}_frames`, canvasTexture.source[0].image, {
+      scene.textures.addSpriteSheet(`${spriteKey}_frames`, canvasTexture, {
         frameWidth: frameWidth,
         frameHeight: frameHeight
       });
