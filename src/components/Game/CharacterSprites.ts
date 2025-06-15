@@ -1,3 +1,4 @@
+
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -66,14 +67,17 @@ export class CharacterSprites {
       this.drawCharacterOnCanvas(context, index * frameWidth, 0, frameWidth, frameHeight, colors, pose);
     });
 
-    // Create sprite sheet directly from canvas
+    // Convert canvas to image and create sprite sheet
     try {
-      scene.textures.addSpriteSheet(framesKey, canvas, {
-        frameWidth: frameWidth,
-        frameHeight: frameHeight
-      });
-      
-      console.log('Successfully created sprite sheet:', framesKey);
+      const image = new Image();
+      image.onload = () => {
+        scene.textures.addSpriteSheet(framesKey, image, {
+          frameWidth: frameWidth,
+          frameHeight: frameHeight
+        });
+        console.log('Successfully created sprite sheet:', framesKey);
+      };
+      image.src = canvas.toDataURL();
     } catch (error) {
       console.error('Error creating sprite sheet:', framesKey, error);
     }
