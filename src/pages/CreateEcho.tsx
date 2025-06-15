@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,8 +9,6 @@ import { useEchoStore } from "@/store/echoStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
-import { CharacterSprites } from "@/components/Game/CharacterSprites";
-import CharacterPreview from "@/components/Game/CharacterPreview";
 
 const CreateEcho = () => {
   const navigate = useNavigate();
@@ -21,12 +18,10 @@ const CreateEcho = () => {
   const [preference, setPreference] = useState("");
   const [playerModel, setPlayerModel] = useState("");
 
-  const playerModels = CharacterSprites.getPlayerModels();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!playerName || !mood || !preference || !playerModel) {
+    if (!playerName || !mood || !preference) {
       toast.error("Por favor, preencha todos os campos");
       return;
     }
@@ -49,13 +44,13 @@ const CreateEcho = () => {
           player_name: playerName,
           player_mood: mood,
           player_preference: preference,
-          player_model: playerModel,
+          player_model: 'adventure',
           echo_personality: personality,
           echo_mood: 'neutro',
           echo_sprite: 'blue'
         });
 
-      setPlayerData({ name: playerName, mood, preference, model: playerModel });
+      setPlayerData({ name: playerName, mood, preference, model: 'adventure' });
       setEchoPersonality(personality);
       
       toast.success("Echo criado com sucesso!");
@@ -116,35 +111,6 @@ const CreateEcho = () => {
               className="bg-slate-700 border-slate-600 text-white mt-2"
               placeholder="Digite seu nome"
             />
-          </div>
-
-          <div>
-            <Label className="text-white mb-4 block">Escolha seu visual:</Label>
-            <RadioGroup value={playerModel} onValueChange={setPlayerModel} className="grid grid-cols-2 gap-4">
-              {playerModels.map((model) => (
-                <div key={model.id} className="relative">
-                  <RadioGroupItem value={model.id} id={model.id} className="sr-only" />
-                  <Label 
-                    htmlFor={model.id} 
-                    className={`cursor-pointer block p-4 rounded-lg border-2 transition-all ${
-                      playerModel === model.id 
-                        ? 'border-cyan-400 bg-slate-700/50' 
-                        : 'border-slate-600 bg-slate-800/30 hover:border-slate-500'
-                    }`}
-                  >
-                    <div className="text-center space-y-3">
-                      <div className="flex justify-center">
-                        <CharacterPreview modelId={model.id} />
-                      </div>
-                      <div>
-                        <div className="text-white font-medium">{model.name}</div>
-                        <div className="text-gray-400 text-sm">{model.description}</div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
           </div>
 
           <div>

@@ -165,15 +165,6 @@ export class GameScene extends Phaser.Scene {
   private createAnimations() {
     const playerKey = `player_${this.gameState.playerModel}_frames`;
     if (this.textures.exists(playerKey)) {
-      if (!this.anims.exists(`${this.gameState.playerModel}_walk`)) {
-        this.anims.create({
-          key: `${this.gameState.playerModel}_walk`,
-          frames: this.anims.generateFrameNumbers(playerKey, { start: 0, end: 3 }),
-          frameRate: 8,
-          repeat: -1
-        });
-      }
-
       if (!this.anims.exists(`${this.gameState.playerModel}_idle`)) {
         this.anims.create({
           key: `${this.gameState.playerModel}_idle`,
@@ -187,15 +178,6 @@ export class GameScene extends Phaser.Scene {
 
     const echoKey = `echo_${this.gameState.echoMood}_frames`;
     if (this.textures.exists(echoKey)) {
-      if (!this.anims.exists(`echo_${this.gameState.echoMood}_walk`)) {
-        this.anims.create({
-          key: `echo_${this.gameState.echoMood}_walk`,
-          frames: this.anims.generateFrameNumbers(echoKey, { start: 0, end: 3 }),
-          frameRate: 6,
-          repeat: -1
-        });
-      }
-
       if (!this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
         this.anims.create({
           key: `echo_${this.gameState.echoMood}_idle`,
@@ -221,36 +203,25 @@ export class GameScene extends Phaser.Scene {
     }
 
     const speed = 160;
-    let isMoving = false;
 
     if (this.cursors.left.isDown || this.wasd.A.isDown) {
       this.player.setVelocityX(-speed);
-      isMoving = true;
     } else if (this.cursors.right.isDown || this.wasd.D.isDown) {
       this.player.setVelocityX(speed);
-      isMoving = true;
     } else {
       this.player.setVelocityX(0);
     }
 
     if (this.cursors.up.isDown || this.wasd.W.isDown) {
       this.player.setVelocityY(-speed);
-      isMoving = true;
     } else if (this.cursors.down.isDown || this.wasd.S.isDown) {
       this.player.setVelocityY(speed);
-      isMoving = true;
     } else {
       this.player.setVelocityY(0);
     }
 
-    if (isMoving) {
-      if (this.anims.exists(`${this.gameState.playerModel}_walk`)) {
-        this.player.anims.play(`${this.gameState.playerModel}_walk`, true);
-      }
-    } else {
-      if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
-        this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
-      }
+    if (this.anims.exists(`${this.gameState.playerModel}_idle`)) {
+      this.player.anims.play(`${this.gameState.playerModel}_idle`, true);
     }
   }
 
@@ -273,14 +244,12 @@ export class GameScene extends Phaser.Scene {
 
     if (distance > 10) {
       this.physics.moveToObject(this.echo, this.echoTarget, echoSpeed);
-      if (this.anims.exists(`echo_${this.gameState.echoMood}_walk`)) {
-        this.echo.anims.play(`echo_${this.gameState.echoMood}_walk`, true);
-      }
     } else {
       this.echo.setVelocity(0);
-      if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
-        this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
-      }
+    }
+    
+    if (this.anims.exists(`echo_${this.gameState.echoMood}_idle`)) {
+      this.echo.anims.play(`echo_${this.gameState.echoMood}_idle`, true);
     }
   }
 

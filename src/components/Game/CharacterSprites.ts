@@ -1,3 +1,4 @@
+
 import Phaser from 'phaser';
 
 export class CharacterSprites {
@@ -50,7 +51,7 @@ export class CharacterSprites {
       const graphics = scene.add.graphics();
       
       // Create sprite sheet using graphics
-      const poses = ['idle', 'left-step', 'idle', 'right-step'];
+      const poses = ['idle'];
       
       poses.forEach((pose, index) => {
         graphics.clear();
@@ -58,7 +59,7 @@ export class CharacterSprites {
       });
 
       // Generate texture from graphics
-      graphics.generateTexture(framesKey, frameWidth * 4, frameHeight);
+      graphics.generateTexture(framesKey, frameWidth * 1, frameHeight);
       
       // Clean up graphics object
       graphics.destroy();
