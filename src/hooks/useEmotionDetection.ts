@@ -35,7 +35,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   const tensorFlow = useTensorFlowEmotion(onEmotionChange);
   
   const switchModel = useCallback((model: EmotionModel) => {
-    console.log(`🔄 Alternando para modelo: ${model}`);
+    console.log(`🔄 Alternando para modelo ultra-otimizado: ${model}`);
     
     // Parar detecção atual
     stopDetection();
@@ -49,7 +49,6 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   const loadModels = useCallback(async () => {
     // Prevenir carregamentos simultâneos
     if (loadingRef.current) {
-      console.log('⚠️ Modelo já está carregando, ignorando...');
       return;
     }
     
@@ -58,7 +57,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     setIsModelLoaded(false);
     
     try {
-      console.log(`📦 Carregando modelo: ${currentModel}`);
+      console.log(`📦 Carregando modelo ultra-otimizado: ${currentModel}`);
       
       if (currentModel === 'mediapipe') {
         if (!mediaPipe.isModelLoaded) {
@@ -75,14 +74,13 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
         setError(tensorFlow.error);
         
       } else if (currentModel === 'simulated') {
-        console.log('📦 Modo simulado ativo');
+        console.log('📦 Modo simulado ultra-rápido ativo');
         setIsModelLoaded(true);
         setError(null);
         
       } else {
-        console.log(`📦 Modelo ${currentModel} não implementado`);
         setIsModelLoaded(false);
-        setError(`Modelo ${currentModel} ainda não está implementado`);
+        setError(`Modelo ${currentModel} não implementado`);
       }
       
     } catch (err: any) {
@@ -96,38 +94,34 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
   
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!isModelLoaded || isDetecting) {
-      console.log('⚠️ Modelo não carregado ou já detectando');
       return;
     }
     
     setIsDetecting(true);
-    console.log(`🎬 Iniciando detecção com ${currentModel}...`);
+    console.log(`🎬 Iniciando detecção ultra-otimizada com ${currentModel}...`);
     
     if (currentModel === 'mediapipe') {
-      console.log('🎯 Iniciando MediaPipe...');
       mediaPipe.startDetection(videoElement);
       
     } else if (currentModel === 'tensorflow') {
-      console.log('🎯 Iniciando TensorFlow...');
       tensorFlow.startDetection(videoElement);
       
     } else if (currentModel === 'simulated') {
-      // Simulação básica para demo
+      // Simulação ultra-rápida
       const emotions: DetectedEmotion[] = ['feliz', 'neutro', 'surpreso', 'triste'];
       let currentIndex = 0;
       
       simulationIntervalRef.current = window.setInterval(() => {
         const emotion = emotions[currentIndex % emotions.length];
         setCurrentEmotion(emotion);
-        setConfidence(0.75 + Math.random() * 0.2);
+        setConfidence(0.8);
         
         if (onEmotionChange) {
           onEmotionChange(emotion);
         }
         
-        console.log(`🎭 Simulação: ${emotion}`);
         currentIndex++;
-      }, 4000);
+      }, 5000); // 5 segundos para simulação
     }
   }, [isModelLoaded, isDetecting, currentModel, mediaPipe, tensorFlow, onEmotionChange]);
   
@@ -135,7 +129,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     setIsDetecting(false);
     setCurrentEmotion(null);
     
-    // Parar simulação se estiver ativa
+    // Parar simulação
     if (simulationIntervalRef.current) {
       clearInterval(simulationIntervalRef.current);
       simulationIntervalRef.current = null;
@@ -148,10 +142,10 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
       tensorFlow.stopDetection();
     }
     
-    console.log('⏹️ Detecção parada');
+    console.log('⏹️ Detecção ultra-otimizada parada');
   }, [currentModel, mediaPipe, tensorFlow]);
   
-  // Sincronizar estados dos modelos - apenas quando não estiver carregando
+  // Sincronizar estados apenas quando necessário
   useEffect(() => {
     if (loadingRef.current) return;
     
@@ -179,7 +173,7 @@ export const useEmotionDetection = (onEmotionChange?: (emotion: DetectedEmotion)
     tensorFlow.error
   ]);
   
-  // Cleanup na desmontagem
+  // Cleanup
   useEffect(() => {
     return () => {
       if (simulationIntervalRef.current) {
