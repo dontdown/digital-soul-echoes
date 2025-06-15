@@ -23,10 +23,11 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
   const [error, setError] = useState<string | null>(null);
   
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const frameCountRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
+  const lastProcessTimeRef = useRef<number>(0);
+  const processingIntervalRef = useRef<number | null>(null);
 
   const loadModel = useCallback(async () => {
     try {
@@ -53,17 +54,10 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       });
       
       console.log('✅ MediaPipe FaceLandmarker criado com sucesso!');
-      console.log('🔧 Configurações:', {
-        outputFaceBlendshapes: true,
-        outputFacialTransformationMatrixes: true,
-        runningMode: 'VIDEO',
-        numFaces: 1
-      });
-      
       setIsModelLoaded(true);
       
     } catch (err: any) {
-      console.error('❌ ERRO CRÍTICO ao carregar MediaPipe:', err);
+      console.error('❌ ERRO ao carregar MediaPipe:', err);
       setError(`Erro ao carregar MediaPipe: ${err.message}`);
       setIsModelLoaded(false);
     }
@@ -71,7 +65,6 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
 
   const analyzeEmotionFromBlendshapes = useCallback((blendshapes: any[]): { emotion: MediaPipeEmotion; confidence: number } => {
     if (!blendshapes || blendshapes.length === 0) {
-      console.log('⚠️ Nenhum blendshape detectado');
       return { emotion: 'neutro', confidence: 0.1 };
     }
 
@@ -81,7 +74,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       shapeMap[shape.categoryName] = shape.score;
     });
 
-    // Log dos blendshapes mais relevantes
+    // Blendshapes mais relevantes
     const relevantShapes = {
       smileLeft: shapeMap['mouthSmileLeft'] || 0,
       smileRight: shapeMap['mouthSmileRight'] || 0,
@@ -93,9 +86,12 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       browUp: Math.max(shapeMap['browOuterUpLeft'] || 0, shapeMap['browOuterUpRight'] || 0)
     };
     
-    console.log('🎭 BLENDSHAPES RELEVANTES:', relevantShapes);
+    // Log apenas a cada 60 frames para reduzir spam
+    if (frameCountRef.current % 60 === 1) {
+      console.log('🎭 BLENDSHAPES:', relevantShapes);
+    }
 
-    // Cálculos de emoção mais sensíveis
+    // Cálculos de emoção
     const felizScore = Math.max(relevantShapes.smileLeft, relevantShapes.smileRight);
     const tristeScore = Math.max(relevantShapes.frownLeft, relevantShapes.frownRight);
     const surprsoScore = Math.max(relevantShapes.eyeWideLeft, relevantShapes.eyeWideRight, relevantShapes.browUp);
@@ -106,76 +102,58 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       triste: tristeScore,
       surpreso: surprsoScore,
       raiva: raivaScore,
-      neutro: 0.2 // Base neutra reduzida
+      neutro: 0.2
     };
 
-    console.log('🎯 SCORES CALCULADOS:', {
-      feliz: emotions.feliz.toFixed(4),
-      triste: emotions.triste.toFixed(4),
-      surpreso: emotions.surpreso.toFixed(4),
-      raiva: emotions.raiva.toFixed(4)
-    });
+    // Log apenas a cada 60 frames
+    if (frameCountRef.current % 60 === 1) {
+      console.log('🎯 SCORES:', {
+        feliz: emotions.feliz.toFixed(3),
+        triste: emotions.triste.toFixed(3),
+        surpreso: emotions.surpreso.toFixed(3),
+        raiva: emotions.raiva.toFixed(3)
+      });
+    }
 
-    // Encontrar emoção dominante com threshold muito baixo
+    // Encontrar emoção dominante
     let maxEmotion: MediaPipeEmotion = 'neutro';
     let maxScore = emotions.neutro;
 
     Object.entries(emotions).forEach(([emotion, score]) => {
-      if (score > maxScore && score > 0.015) { // Threshold ultra baixo
+      if (score > maxScore && score > 0.02) {
         maxEmotion = emotion as MediaPipeEmotion;
         maxScore = score;
       }
     });
 
-    const confidence = Math.min(Math.max(maxScore * 8, 0.1), 1); // Amplificar mais a confiança
+    const confidence = Math.min(Math.max(maxScore * 6, 0.1), 1);
 
-    console.log(`🎯 RESULTADO: ${maxEmotion} (score: ${maxScore.toFixed(4)}, confiança: ${confidence.toFixed(4)})`);
+    // Log resultado apenas a cada 60 frames
+    if (frameCountRef.current % 60 === 1) {
+      console.log(`🎯 RESULTADO: ${maxEmotion} (${confidence.toFixed(3)})`);
+    }
 
     return { emotion: maxEmotion, confidence };
   }, []);
 
   const processFrame = useCallback(() => {
-    if (!faceLandmarkerRef.current) {
-      console.log('❌ FaceLandmarker não disponível');
-      return;
-    }
-    
-    if (!videoElementRef.current) {
-      console.log('❌ Elemento de vídeo não disponível');
-      return;
-    }
-
-    // Verificar se deve continuar processando
-    if (!isProcessingRef.current) {
-      console.log('🛑 Processamento parado por flag');
+    if (!faceLandmarkerRef.current || !videoElementRef.current || !isProcessingRef.current) {
       return;
     }
 
     frameCountRef.current++;
     const video = videoElementRef.current;
     
-    // Debug a cada 30 frames para não poluir o console
-    if (frameCountRef.current % 30 === 1) {
-      console.log(`🎬 PROCESSANDO FRAME ${frameCountRef.current}`);
-      console.log(`📊 Estado do vídeo:`, {
-        readyState: video.readyState,
-        currentTime: video.currentTime.toFixed(3),
-        paused: video.paused,
-        width: video.videoWidth,
-        height: video.videoHeight,
-        isProcessing: isProcessingRef.current
-      });
+    // Log apenas a cada 120 frames para reduzir muito o spam
+    if (frameCountRef.current % 120 === 1) {
+      console.log(`🎬 Processando frame ${frameCountRef.current}`);
     }
 
     try {
       const now = performance.now();
       const results = faceLandmarkerRef.current.detectForVideo(video, now);
       
-      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
-        if (frameCountRef.current % 30 === 1) {
-          console.log('✅ ROSTO DETECTADO! Analisando emoção...');
-        }
-        
+      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {        
         const { emotion, confidence: conf } = analyzeEmotionFromBlendshapes(results.faceBlendshapes);
         
         setCurrentEmotion(emotion);
@@ -184,44 +162,20 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
         if (onEmotionChange) {
           onEmotionChange(emotion);
         }
-        
-        if (frameCountRef.current % 30 === 1) {
-          console.log(`🎭 EMOÇÃO DETECTADA: ${emotion} (${Math.round(conf * 100)}%)`);
-        }
-      } else {
-        if (frameCountRef.current % 60 === 1) {
-          console.log('❌ NENHUM ROSTO DETECTADO no frame atual');
-        }
       }
       
     } catch (err) {
-      console.error('💥 ERRO no processamento do frame:', err);
-    }
-
-    // Continuar processamento se ainda estiver ativo
-    if (isProcessingRef.current) {
-      animationFrameRef.current = requestAnimationFrame(processFrame);
-    } else {
-      console.log('🛑 Parando processamento - flag desativada');
+      console.error('💥 ERRO no processamento:', err);
     }
   }, [analyzeEmotionFromBlendshapes, onEmotionChange]);
 
   const startDetection = useCallback((videoElement: HTMLVideoElement) => {
     if (!faceLandmarkerRef.current || !isModelLoaded) {
-      console.warn('⚠️ ERRO: Modelo MediaPipe não carregado');
+      console.warn('⚠️ Modelo MediaPipe não carregado');
       return;
     }
 
     console.log('🚀 INICIANDO DETECÇÃO MEDIAPIPE');
-    console.log('📹 Elemento de vídeo detalhado:', {
-      width: videoElement.videoWidth,
-      height: videoElement.videoHeight,
-      readyState: videoElement.readyState,
-      currentTime: videoElement.currentTime,
-      paused: videoElement.paused,
-      muted: videoElement.muted,
-      srcObject: !!videoElement.srcObject
-    });
 
     // Configurar estados e referências
     videoElementRef.current = videoElement;
@@ -229,37 +183,31 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     isProcessingRef.current = true;
     frameCountRef.current = 0;
     
-    console.log('✅ Estado alterado para isDetecting = true');
-    console.log('✅ isProcessingRef definido como true');
-    
-    // Aguardar um momento e iniciar processamento
-    setTimeout(() => {
-      if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
-        console.log('✅ Vídeo confirmado como pronto, iniciando loop de processamento...');
+    // Usar setInterval em vez de requestAnimationFrame para controlar melhor a frequência
+    // Processar apenas 10 FPS em vez de 60 FPS para reduzir lag
+    processingIntervalRef.current = window.setInterval(() => {
+      if (isProcessingRef.current && videoElement.readyState >= 2) {
         processFrame();
-      } else {
-        console.error('❌ Vídeo não está pronto:', {
-          readyState: videoElement.readyState,
-          videoWidth: videoElement.videoWidth
-        });
       }
-    }, 100);
+    }, 100); // 100ms = 10 FPS
+    
+    console.log('✅ Detecção iniciada com 10 FPS');
   }, [isModelLoaded, processFrame]);
 
   const stopDetection = useCallback(() => {
     console.log('🛑 PARANDO DETECÇÃO MEDIAPIPE');
     
-    // Parar processamento imediatamente
+    // Parar processamento
     isProcessingRef.current = false;
     setIsDetecting(false);
     setCurrentEmotion(null);
     frameCountRef.current = 0;
     videoElementRef.current = null;
     
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-      console.log('✅ AnimationFrame cancelado');
+    if (processingIntervalRef.current) {
+      clearInterval(processingIntervalRef.current);
+      processingIntervalRef.current = null;
+      console.log('✅ Interval cancelado');
     }
   }, []);
 
