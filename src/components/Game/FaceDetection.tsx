@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWebcam } from '@/hooks/useWebcam';
 import { useEmotionDetection, EmotionModel, DetectedEmotion } from '@/hooks/useEmotionDetection';
-import { Camera, CameraOff, Eye, AlertCircle, Play, Settings } from 'lucide-react';
+import { Camera, CameraOff, Eye, AlertCircle, Play, Settings, Bug } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FaceDetectionProps {
@@ -29,34 +29,38 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
   
   const [isEnabled, setIsEnabled] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   // Carregar modelo inicial apenas uma vez quando visível
   useEffect(() => {
     if (isVisible && !isModelLoaded) {
-      console.log('🔄 Carregando modelo inicial...');
+      console.log('🔄 FaceDetection: Carregando modelo inicial...');
       loadModels();
     }
-  }, [isVisible]);
+  }, [isVisible, isModelLoaded, loadModels]);
 
   const handleToggleDetection = async () => {
     if (!isEnabled) {
       try {
-        console.log('🚀 Ativando detecção...');
+        console.log('🚀 FaceDetection: Ativando detecção...');
         setIsEnabled(true);
+        
+        console.log('📷 Iniciando webcam...');
         await startWebcam();
         
         if (!isModelLoaded) {
+          console.log('📦 Modelo não carregado, carregando...');
           await loadModels();
         }
         
         toast.success('Detecção ativada!');
       } catch (err) {
-        console.error('💥 Erro:', err);
+        console.error('💥 Erro ao ativar detecção:', err);
         toast.error('Erro ao ativar detecção');
         setIsEnabled(false);
       }
     } else {
-      console.log('🛑 Desativando detecção...');
+      console.log('🛑 FaceDetection: Desativando detecção...');
       stopWebcam();
       stopDetection();
       setIsEnabled(false);
@@ -91,42 +95,55 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     }
   ];
 
-  // Auto-iniciar detecção quando câmera e modelo estiverem prontos - com mais logs
+  // Auto-iniciar detecção quando câmera e modelo estiverem prontos
   useEffect(() => {
-    console.log('🔍 Verificando condições para auto-start:', {
+    console.log('🔍 FaceDetection: Verificando condições para auto-start:', {
       isActive,
       videoElement: !!videoRef.current,
       isModelLoaded,
       isDetecting,
       isEnabled,
-      videoReady: videoRef.current?.readyState
+      videoReady: videoRef.current?.readyState,
+      videoWidth: videoRef.current?.videoWidth,
+      videoHeight: videoRef.current?.videoHeight
     });
     
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🎬 Condições atendidas - Auto-iniciando detecção...');
+      console.log('🎬 FaceDetection: Condições atendidas - Auto-iniciando detecção...');
       
-      // Verificar se o vídeo realmente está funcionando
       const video = videoRef.current;
-      console.log('📹 Status do vídeo:', {
+      console.log('📹 Status completo do vídeo:', {
         width: video.videoWidth,
         height: video.videoHeight,
         readyState: video.readyState,
         currentTime: video.currentTime,
         paused: video.paused,
-        muted: video.muted
+        muted: video.muted,
+        srcObject: !!video.srcObject,
+        networkState: video.networkState
       });
       
+      // Aguardar mais tempo para garantir que o vídeo está completamente pronto
       setTimeout(() => {
-        if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2) {
-          console.log('✅ Iniciando detecção real...');
+        if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
+          console.log('✅ FaceDetection: Iniciando detecção real...');
           startDetection(videoRef.current);
-          toast.success(`Detecção ${currentModel} iniciada!`);
+          toast.success(`Detecção ${currentModel} iniciada!`, {
+            description: debugMode ? 'Modo debug ativo - veja o console' : 'Faça expressões para testar'
+          });
         } else {
-          console.warn('⚠️ Vídeo ainda não está pronto');
+          console.warn('⚠️ FaceDetection: Vídeo ainda não está completamente pronto');
+          console.log('📊 Estado atual:', {
+            videoRef: !!videoRef.current,
+            isActive,
+            isModelLoaded,
+            readyState: video.readyState,
+            videoWidth: video.videoWidth
+          });
         }
-      }, 500);
+      }, 1000); // Aumentar para 1 segundo
     }
-  }, [isActive, isModelLoaded, isEnabled]);
+  }, [isActive, isModelLoaded, isEnabled, currentModel, startDetection]);
 
   const getEmotionColor = (emotion: DetectedEmotion | null) => {
     switch (emotion) {
@@ -171,6 +188,15 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
           </div>
           <div className="flex items-center space-x-1">
             <Button
+              onClick={() => setDebugMode(!debugMode)}
+              variant="ghost"
+              size="sm"
+              className={`${debugMode ? 'text-orange-400' : 'text-gray-400'} hover:text-orange-300`}
+              title="Modo Debug"
+            >
+              <Bug className="w-4 h-4" />
+            </Button>
+            <Button
               onClick={() => setShowModelSelector(!showModelSelector)}
               variant="ghost"
               size="sm"
@@ -189,6 +215,20 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             </Button>
           </div>
         </div>
+
+        {debugMode && (
+          <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-2">
+            <div className="text-orange-400 text-xs font-medium mb-1">🐛 Debug Info:</div>
+            <div className="text-orange-300 text-xs space-y-1">
+              <div>Modelo: {currentModel}</div>
+              <div>Carregado: {isModelLoaded ? '✅' : '❌'}</div>
+              <div>Câmera: {isActive ? '✅' : '❌'}</div>
+              <div>Detectando: {isDetecting ? '✅' : '❌'}</div>
+              <div>Vídeo: {videoRef.current?.videoWidth}x{videoRef.current?.videoHeight}</div>
+              <div className="text-xs text-orange-200">Veja o console para logs detalhados</div>
+            </div>
+          </div>
+        )}
 
         {/* Seletor de Modelos */}
         {showModelSelector && (
@@ -324,7 +364,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                   <div className="text-xs text-gray-400 mt-1">
                     Confiança: {Math.round(confidence * 100)}%
                   </div>
-                  {confidence < 0.3 && (
+                  {confidence < 0.3 && !isSimulated && (
                     <div className="text-xs text-yellow-400 mt-1">
                       💡 Tente fazer expressões mais marcantes
                     </div>
@@ -356,7 +396,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
               <div className="absolute top-2 left-2 flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-white text-xs bg-black/50 px-1 rounded">
-                  REAL
+                  {debugMode ? 'DEBUG' : 'REAL'}
                 </span>
               </div>
             )}
@@ -388,6 +428,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
             '🎭 Modo demo - Escolha um modelo real acima' :
             '🔧 Modelo em desenvolvimento'
           }
+          {debugMode && <div className="text-orange-400 mt-1">🐛 Debug ativo - veja console</div>}
         </div>
       </motion.div>
     </AnimatePresence>
