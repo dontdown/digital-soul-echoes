@@ -1,8 +1,9 @@
-
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Brain, 
   Camera, 
@@ -20,6 +21,14 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Redirect logged-in users to home
+  useEffect(() => {
+    if (user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
 
   const handleGetStarted = () => {
     console.log("Navegando para /create-echo");
@@ -28,28 +37,26 @@ const Landing = () => {
 
   const handleLogin = () => {
     console.log("Navegando para /auth");
-    navigate("/auth");
+    if (user) {
+      // If user is already logged in, go to home
+      navigate("/home");
+    } else {
+      // If not logged in, go to auth page
+      navigate("/auth");
+    }
   };
 
   const handleLearnMore = () => {
-    console.log("Tentando scroll para features");
+    console.log("Scroll para features");
     const featuresSection = document.getElementById('features');
     if (featuresSection) {
-      // Usar uma abordagem mais robusta para o scroll
-      const targetPosition = featuresSection.offsetTop - 80; // 80px de offset para header
+      const elementTop = featuresSection.getBoundingClientRect().top;
+      const offsetPosition = elementTop + window.pageYOffset - 80;
       
-      try {
-        window.scrollTo({
-          top: targetPosition,
-          behavior: 'smooth'
-        });
-      } catch (error) {
-        console.log("Erro no scroll suave, usando fallback:", error);
-        // Fallback para navegadores que não suportam scroll suave
-        window.scrollTo(0, targetPosition);
-      }
-    } else {
-      console.log("Seção features não encontrada");
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -156,7 +163,7 @@ const Landing = () => {
           variant="outline"
           className="bg-transparent text-white border-white hover:bg-white hover:text-slate-900 transition-all duration-300 font-medium"
         >
-          Entrar
+          {user ? 'Ir para Home' : 'Entrar'}
         </Button>
       </header>
 
