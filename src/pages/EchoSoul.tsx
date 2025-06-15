@@ -4,16 +4,19 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import PhaserGame from '@/components/Game/PhaserGame';
 import GameChat from '@/components/Game/GameChat';
+import FaceDetection from '@/components/Game/FaceDetection';
 import { useEchoStore } from '@/store/echoStore';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, History, Menu } from 'lucide-react';
+import { Eye, History, Menu, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { DetectedEmotion } from '@/hooks/useFaceDetection';
 
 const EchoSoul = () => {
   const navigate = useNavigate();
   const { playerData, echoPersonality, echoMood, updateEchoMood } = useEchoStore();
   const [showChat, setShowChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showFaceDetection, setShowFaceDetection] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
   const sceneRef = useRef<any>(null);
 
@@ -109,6 +112,28 @@ const EchoSoul = () => {
     });
   }, []); // Remover dependência showChat
 
+  const handleFaceEmotionDetected = useCallback((emotion: DetectedEmotion) => {
+    console.log('Emoção detectada pela webcam:', emotion);
+    
+    // Mapear emoções detectadas para o sistema do Echo
+    const emotionMap: Record<DetectedEmotion, string> = {
+      'feliz': 'feliz',
+      'triste': 'triste', 
+      'raiva': 'raiva',
+      'surpreso': 'feliz', // Surpresa pode ser positiva
+      'neutro': 'calmo',
+      'cansado': 'triste'
+    };
+
+    const newMood = emotionMap[emotion];
+    if (newMood !== echoMood) {
+      updateEchoMood(newMood);
+      toast.success(`Echo percebeu que você está ${emotion}!`, {
+        duration: 2000
+      });
+    }
+  }, [echoMood, updateEchoMood]);
+
   if (!gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -130,6 +155,15 @@ const EchoSoul = () => {
           </div>
           
           <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => setShowFaceDetection(!showFaceDetection)}
+              variant="ghost"
+              size="sm"
+              className={`${showFaceDetection ? 'text-cyan-400' : 'text-white'} hover:text-cyan-400`}
+              title="Detecção Facial"
+            >
+              <Camera className="w-4 h-4" />
+            </Button>
             <Button
               onClick={() => setShowMenu(!showMenu)}
               variant="ghost"
@@ -170,6 +204,12 @@ const EchoSoul = () => {
         </motion.div>
       )}
 
+      {/* Face Detection Component */}
+      <FaceDetection 
+        isVisible={showFaceDetection}
+        onEmotionDetected={handleFaceEmotionDetected}
+      />
+
       {/* Game Container */}
       <div className="flex items-center justify-center min-h-screen pt-20 pb-8">
         <motion.div
@@ -191,6 +231,11 @@ const EchoSoul = () => {
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-lg p-3 inline-block">
               <p className="text-gray-300 text-sm">
                 Use WASD ou setas para mover. Pressione E próximo ao Echo para conversar.
+                {showFaceDetection && (
+                  <span className="block text-cyan-400 mt-1">
+                    📹 Echo está observando suas expressões!
+                  </span>
+                )}
               </p>
             </div>
           </div>
