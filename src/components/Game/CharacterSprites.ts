@@ -3,7 +3,6 @@ import Phaser from 'phaser';
 
 export class CharacterSprites {
   static createPlayerSprite(scene: Phaser.Scene, modelType: string) {
-    // Só criar o sprite do modelo escolhido
     const colors = this.getPlayerColors(modelType);
     this.createWalkingSprites(scene, `player_${modelType}`, colors);
   }
@@ -59,15 +58,21 @@ export class CharacterSprites {
       canvas.refresh();
     });
 
-    // Criar uma textura atlas para a animação
+    // Criar uma textura atlas para a animação usando createCanvas diretamente
     const atlasCanvas = scene.textures.createCanvas(`${spriteKey}_atlas`, frameWidth * 4, frameHeight);
     const atlasContext = atlasCanvas.getContext();
     
     frames.forEach((frameName, index) => {
       const frameTexture = scene.textures.get(`${spriteKey}_${frameName}`);
+      
+      // Verificar se a textura existe e tem fonte canvas
       if (frameTexture && frameTexture.source && frameTexture.source[0]) {
         const source = frameTexture.source[0];
-        atlasContext.drawImage(source.image, index * frameWidth, 0);
+        
+        // Verificar se a fonte é um canvas
+        if (source.source && source.source instanceof HTMLCanvasElement) {
+          atlasContext.drawImage(source.source, index * frameWidth, 0);
+        }
       }
     });
     
