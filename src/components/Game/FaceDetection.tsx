@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -118,23 +117,23 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
     };
   }, [currentEmotion]);
 
-  // Auto-iniciar detecção otimizada
+  // Auto-iniciar detecção sensível
   useEffect(() => {    
     if (isActive && videoRef.current && isModelLoaded && !isDetecting && isEnabled) {
-      console.log('🎬 FaceDetection: Auto-iniciando detecção balanceada...');
+      console.log('🎬 FaceDetection: Auto-iniciando detecção SENSÍVEL...');
       
       const video = videoRef.current;
       
-      // Aguardar menos tempo para reduzir delay
+      // Reduzir delay ainda mais
       setTimeout(() => {
         if (videoRef.current && isActive && isModelLoaded && video.readyState >= 2 && video.videoWidth > 0) {
-          console.log('✅ FaceDetection: Iniciando detecção balanceada...');
+          console.log('✅ FaceDetection: Iniciando detecção SENSÍVEL...');
           startDetection(videoRef.current);
-          toast.success(`${currentModel} iniciado! 2 FPS balanceado`, {
+          toast.success(`${currentModel} SENSÍVEL iniciado! 3 FPS`, {
             duration: 1500
           });
         }
-      }, 500);
+      }, 300);
     }
   }, [isActive, isModelLoaded, isEnabled, currentModel, startDetection, isDetecting]);
 
@@ -264,12 +263,19 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
                     {currentEmotion}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {Math.round(confidence * 100)}%
+                    {Math.round(confidence * 100)}% conf
                   </div>
                 </>
               ) : (
                 <div className="text-gray-400 text-xs">
-                  {isDetecting ? 'Aguardando...' : 'Inativo'}
+                  {isDetecting ? 'Aguardando expressão...' : 'Inativo'}
+                </div>
+              )}
+              
+              {/* Indicador de sensibilidade */}
+              {currentModel === 'mediapipe' && isDetecting && (
+                <div className="text-xs text-green-400 mt-1">
+                  🎯 Modo Ultra-Sensível Ativo
                 </div>
               )}
             </div>
@@ -303,7 +309,7 @@ const FaceDetection = ({ onEmotionDetected, isVisible }: FaceDetectionProps) => 
         )}
 
         <div className="text-xs text-gray-400 text-center">
-          🚀 Performance balanceada (2 FPS)
+          🎯 Ultra-sensível (3 FPS) - Faça expressões!
         </div>
       </motion.div>
     </AnimatePresence>

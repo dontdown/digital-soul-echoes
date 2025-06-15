@@ -27,18 +27,17 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
   const isProcessingRef = useRef<boolean>(false);
   const processingIntervalRef = useRef<number | null>(null);
   
-  // Cache otimizado mas mais responsivo
+  // Sistema de detecção mais agressivo
   const lastEmotionRef = useRef<MediaPipeEmotion>('neutro');
-  const emotionStabilityCountRef = useRef<number>(0);
+  const emotionCountRef = useRef<number>(0);
   const lastProcessTimeRef = useRef<number>(0);
-  const frameSkipCountRef = useRef<number>(0);
 
   const loadModel = useCallback(async () => {
     try {
       setError(null);
       setIsModelLoaded(false);
       
-      console.log('🤖 Carregando MediaPipe otimizado...');
+      console.log('🤖 Carregando MediaPipe sensível...');
       
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
@@ -72,59 +71,110 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
 
     const shapes = blendshapes[0].categories;
     
-    // Análise mais sensível - thresholds mais baixos
+    // Scores para diferentes emoções - thresholds muito baixos
     let smileScore = 0;
     let frownScore = 0;
     let browDownScore = 0;
     let eyeWideScore = 0;
+    let mouthOpenScore = 0;
+    let cheekRaiseScore = 0;
 
-    // Verificar mais blendshapes para melhor detecção
-    for (let i = 0; i < Math.min(shapes.length, 20); i++) {
+    // Analisar TODOS os blendshapes disponíveis
+    for (let i = 0; i < shapes.length; i++) {
       const shape = shapes[i];
-      const name = shape.categoryName;
+      const name = shape.categoryName.toLowerCase();
       const score = shape.score;
       
-      if (name.includes('mouthSmile') || name.includes('cheekSquint')) {
+      // Debug: imprimir os blendshapes mais altos
+      if (score > 0.05) {
+        console.log(`Blendshape ${name}: ${score.toFixed(3)}`);
+      }
+      
+      // Sorriso - capturar mais variações
+      if (name.includes('smile') || name.includes('cheek') && name.includes('squint')) {
         smileScore = Math.max(smileScore, score);
-      } else if (name.includes('mouthFrown') || name.includes('mouthSad')) {
+      }
+      
+      // Tristeza - mais sensível
+      if (name.includes('frown') || name.includes('sad') || name.includes('mouth') && name.includes('down')) {
         frownScore = Math.max(frownScore, score);
-      } else if (name.includes('browDown') || name.includes('browLowerer')) {
+      }
+      
+      // Raiva - sobrancelha franzida
+      if (name.includes('brow') && (name.includes('down') || name.includes('lower'))) {
         browDownScore = Math.max(browDownScore, score);
-      } else if (name.includes('eyeWide') || name.includes('eyeSquint')) {
+      }
+      
+      // Surpresa - olhos arregalados e boca aberta
+      if (name.includes('eye') && name.includes('wide')) {
         eyeWideScore = Math.max(eyeWideScore, score);
+      }
+      
+      if (name.includes('mouth') && name.includes('open')) {
+        mouthOpenScore = Math.max(mouthOpenScore, score);
+      }
+      
+      // Felicidade adicional - bochechas levantadas
+      if (name.includes('cheek') && name.includes('raise')) {
+        cheekRaiseScore = Math.max(cheekRaiseScore, score);
       }
     }
 
-    // Thresholds mais baixos e sensíveis
+    // Combinar scores relacionados
+    const totalSmileScore = smileScore + (cheekRaiseScore * 0.5);
+    const totalSurpriseScore = eyeWideScore + (mouthOpenScore * 0.3);
+
+    // Thresholds MUITO baixos e sensíveis
     let emotion: MediaPipeEmotion = 'neutro';
-    let confidence = 0.3;
+    let confidence = 0.4;
 
-    if (smileScore > 0.08) { // Reduzido de 0.15 para 0.08
+    // Priorizar detecção de emoções não-neutras
+    if (totalSmileScore > 0.03) { // Extremamente baixo
       emotion = 'feliz';
-      confidence = Math.min(smileScore * 3, 0.9);
-    } else if (frownScore > 0.06) { // Reduzido de 0.12 para 0.06
+      confidence = Math.min(totalSmileScore * 8, 0.95);
+      console.log(`😊 FELIZ detectado! Score: ${totalSmileScore.toFixed(3)}`);
+      
+    } else if (frownScore > 0.02) { // Muito baixo
       emotion = 'triste';
-      confidence = Math.min(frownScore * 4, 0.9);
-    } else if (browDownScore > 0.05) {
+      confidence = Math.min(frownScore * 10, 0.9);
+      console.log(`😢 TRISTE detectado! Score: ${frownScore.toFixed(3)}`);
+      
+    } else if (browDownScore > 0.02) {
       emotion = 'raiva';
-      confidence = Math.min(browDownScore * 4, 0.8);
-    } else if (eyeWideScore > 0.07) {
+      confidence = Math.min(browDownScore * 8, 0.85);
+      console.log(`😠 RAIVA detectado! Score: ${browDownScore.toFixed(3)}`);
+      
+    } else if (totalSurpriseScore > 0.03) {
       emotion = 'surpreso';
-      confidence = Math.min(eyeWideScore * 3, 0.8);
-    }
-
-    // Estabilização reduzida - só mudar após 2 frames consistentes
-    if (emotion === lastEmotionRef.current) {
-      emotionStabilityCountRef.current++;
+      confidence = Math.min(totalSurpriseScore * 6, 0.8);
+      console.log(`😲 SURPRESO detectado! Score: ${totalSurpriseScore.toFixed(3)}`);
+      
     } else {
-      emotionStabilityCountRef.current = 0;
-      lastEmotionRef.current = emotion;
+      // Tentar detectar cansaço por falta de expressão
+      if (smileScore < 0.01 && frownScore < 0.01 && eyeWideScore < 0.01) {
+        emotion = 'cansado';
+        confidence = 0.5;
+        console.log(`😴 CANSADO detectado por baixa expressividade`);
+      }
     }
 
-    if (emotionStabilityCountRef.current >= 2) { // Reduzido de 6 para 2
+    // Sistema de estabilização MÍNIMO - aceitar mudanças rapidamente
+    if (emotion !== lastEmotionRef.current) {
+      emotionCountRef.current = 0;
+      lastEmotionRef.current = emotion;
+    } else {
+      emotionCountRef.current++;
+    }
+
+    // Só precisa de 1 frame consistente para não-neutro, 3 para neutro
+    const requiredFrames = emotion === 'neutro' ? 3 : 1;
+    
+    if (emotionCountRef.current >= requiredFrames) {
       return { emotion, confidence };
     } else {
-      return { emotion: currentEmotion || 'neutro', confidence };
+      // Se não temos frames suficientes, manter emoção anterior se não for neutro
+      const fallback = currentEmotion && currentEmotion !== 'neutro' ? currentEmotion : emotion;
+      return { emotion: fallback, confidence };
     }
   }, [currentEmotion]);
 
@@ -135,14 +185,8 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
 
     const now = performance.now();
     
-    // Throttling menos agressivo: 500ms entre processamentos
-    if (now - lastProcessTimeRef.current < 500) { // Reduzido de 1000ms para 500ms
-      return;
-    }
-
-    // Skip menos frames (processa 1 a cada 2 frames)
-    frameSkipCountRef.current++;
-    if (frameSkipCountRef.current % 2 !== 0) { // Reduzido de 5 para 2
+    // Processar mais frequentemente - 300ms
+    if (now - lastProcessTimeRef.current < 300) {
       return;
     }
 
@@ -155,8 +199,9 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {        
         const { emotion, confidence: conf } = analyzeEmotionFromBlendshapes(results.faceBlendshapes);
         
-        // Atualizar com confiança menor
-        if (emotion !== currentEmotion && conf > 0.2) { // Reduzido de 0.3 para 0.2
+        // Aceitar mudanças com confiança muito baixa
+        if (emotion !== currentEmotion && conf > 0.1) {
+          console.log(`🎭 Mudança de emoção: ${currentEmotion} → ${emotion} (${(conf * 100).toFixed(1)}%)`);
           setCurrentEmotion(emotion);
           setConfidence(conf);
           
@@ -167,10 +212,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       }
       
     } catch (err) {
-      // Log reduzido
-      if (frameSkipCountRef.current % 100 === 1) {
-        console.warn('MediaPipe skip:', frameSkipCountRef.current);
-      }
+      console.warn('MediaPipe frame skip');
     }
   }, [analyzeEmotionFromBlendshapes, onEmotionChange, currentEmotion]);
 
@@ -180,32 +222,23 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
       return;
     }
 
-    console.log('🚀 Iniciando MediaPipe otimizado (2 FPS)');
+    console.log('🚀 Iniciando MediaPipe ULTRA SENSÍVEL (3 FPS)');
 
     videoElementRef.current = videoElement;
     setIsDetecting(true);
     isProcessingRef.current = true;
-    emotionStabilityCountRef.current = 0;
-    frameSkipCountRef.current = 0;
+    emotionCountRef.current = 0;
     lastProcessTimeRef.current = 0;
     
-    // Aumentar para 2 FPS (500ms)
+    // 3 FPS para mais responsividade
     processingIntervalRef.current = window.setInterval(() => {
       if (isProcessingRef.current && videoElement.readyState >= 2) {
-        // Usar requestIdleCallback se disponível
-        if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => {
-            processFrame();
-          }, { timeout: 50 });
-        } else {
-          setTimeout(() => {
-            processFrame();
-          }, 10);
-        }
+        // Processar imediatamente sem setTimeout
+        processFrame();
       }
-    }, 500); // 500ms = 2 FPS
+    }, 333); // 333ms = 3 FPS
     
-    console.log('✅ Detecção 2 FPS iniciada');
+    console.log('✅ Detecção SENSÍVEL iniciada');
   }, [isModelLoaded, processFrame]);
 
   const stopDetection = useCallback(() => {
@@ -215,8 +248,7 @@ export const useMediaPipeEmotion = (onEmotionChange?: (emotion: MediaPipeEmotion
     setIsDetecting(false);
     setCurrentEmotion(null);
     videoElementRef.current = null;
-    emotionStabilityCountRef.current = 0;
-    frameSkipCountRef.current = 0;
+    emotionCountRef.current = 0;
     lastProcessTimeRef.current = 0;
     
     if (processingIntervalRef.current) {
